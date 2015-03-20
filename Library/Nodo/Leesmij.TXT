@@ -1,0 +1,4 @@
+Deze library is nodig om de Nodo code te kunnen compileren en bevat een 
+aangepaste versie van de standaard ethernet library en de Wired librarye.
+
+Dit omdat de standaard libraries bugs bevatten en een voor de Nodo noodzakelijke funktionaliteit mist.

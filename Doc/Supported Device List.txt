@@ -1,0 +1,86 @@
+﻿============================================================================
+Nodo - RFLink supported devices list
+============================================================================
+Remote Controls and Electrical Switches / Dimmers etc.:
+-------------------------------------------------------
+Klik Aan Klik Uit (Code Wheel)                      (Send + Receive)
+ -  Princeton PT2262 / MOSDESIGN M3EB / Domia Lite / Klik-Aan-Klik-Uit / Intertechno)
+ -  CoCo Technologies / Cogex / D-IO (Chacon) / Nexa / Düwi Terminal
+    
+Klik Aan Klik Uit (Automatic Code Learning)         (Send + Receive)
+Home Easy (Code Wheel)                              (Send + Receive)	
+Flamingo FA500R/S/DSS/WD (Automatic Code Learning)  (Send + Receive)
+-   SilverCrest 91210/60494 RCS AAA3680
+-   Mumbi M-FS300
+-   Unitec 48110 EIM 826 / 48111 EIM 821
+
+Elro Home Comfort AB600                             (Send + Receive)
+Intertek Eurodomest 972080(Automatic Code Learning) (Send + Receive)
+Blyss                                               (Send + Receive)
+Conrad RSL2                                         (Receive only)
+Kambrook RF3399/RF3405/RF3672/RF3689/RF4471R        (Receive only)
+============================================================================
+Weather Sensors:
+----------------
+Alecto V1: 
+          Alecto WS3500, SilverCrest, Otio SH-10, Otio SH-20
+          Auriol H13726, Ventus WS155, Hama EWS 1500, Meteoscan W155/W160 
+          Alecto WS4500, Ventus W044, Balance RF-WS105 
+Alecto V2: (868 Mhz!) 
+          ACH2010, DKW2012
+Alecto V3: 
+          WS1100, WS1200
+Cresta/Hideki:
+          Hideki, TFA Nexus, Mebus, Irox, Irox-Pro X, Honeywell, Cresta TE923, TE923W, TE821W,  
+          WXR810, DV928, Ventus W906, HomeWizard Rain meter
+Mebus: 
+          Mebus Outdoor Sensor
+          Stacja Pogody WS-9941-M
+UPM/Esic:
+          UPM, Esic, Emos, DVM, Clas Ohlson, Dickson 
+          WT260,WT260H,WT440H,WT450,WT450H,WDS500,RG700
+LaCrosse: 
+          Lacrosse TX3-TH  Thermo/Humidity, Lacrosse TX4
+          WS7000-15: Anemometer, WS7000-16: Rain precipitation, WS2500-19: Brightness Luxmeter, 
+          WS7000-20: Thermo/Humidity/Barometer
+Auriol:   
+          Z31743, Z31055A, Rubicson
+Oregon V1/2/3:
+          THC238, THC268, THN132N, THWR288A, THRN122N, THN122N, AW129, AW131, THGR268, THGR122X,
+          THGN122N, THGN123N, THGR122NX, THGR228N, THGR238, WTGR800, THGR918, THGRN228NX, THGN500,
+          THGR810, RTGR328N, THGR328N, Huger BTHR918, BTHR918N, BTHR968, RGR126, RGR682, RGR918, PCR122
+          THWR800, THR128, THR138, THC138, OWL CM119, cent-a-meter, OWL CM113, Electrisave 
+          UVN128, UV138, UVN800, Huger-STR918, WGR918, WGR800, PCR800, WGTR800, BTHG968
+============================================================================
+Window blinds/shutters/sun screens:
+-----------------------------------
+Kaku ASUN650
+============================================================================
+Motion Detectors & Door sensors:
+--------------------------------
+Low Budget Chinese PIR
+Ajax Chub Varel PIR
+============================================================================
+Fireplace:
+----------
+Mertik G6R H4T1 / Dru
+============================================================================
+Smoke Detectors:
+----------------
+KD101                                                                          (Send + Receive)
+Flamingo FA20RF                                                                (Send + Receive)
+============================================================================
+Doorbells:
+----------
+SelectPlus (200689103 - Black - Datecode:0614), 1 by One, Delta (O00 QH-0031)  (Send + Receive)
+SelectPlus (200689101 - White - Datecode:0914)                                 (Send + Receive)
+Byron SX                                                                       (Send + Receive)
+Plieger York                                                                   (Receive) 
+        Note that when the Plieger button is detected as Conrad RSL2, you need to use the button 
+        on the inside to change the address code of the Plieger.
+============================================================================
+Nodo Slave Sensors:
+-------------------
+Temperature, Humidity, UV, barometric Pressure, OpenTherm and any other kind 
+of Nodo sensor you want to include.
+============================================================================

@@ -1,0 +1,119 @@
+Nodo - RFLink Commands and Data fields
+
+The use of this protocol is free for both server and client sides of the implementation
+Data is send serial (via USB) as "text" at a speed of 57600 baud (N,8,1)
+It is sufficient to open a port and listen to the data.
+Each text line contains information that has been received via RF signals.
+ 
+
+Packet structure - Received data from RF:
+-----------------------------------------
+20;ID=9999;Name;LABEL=data;
+
+20          => Node number 20 means from RFLink to the master, 10 means from the master to RFLink
+;           => field separator
+NAME        => Device name (can be used to display in applications etc.)
+LABEL=data  => contains the field type and data for that field, can be present multiple times per device
+
+
+Packet structure - Send data via RF:
+------------------------------------
+10;Name;device;action;
+
+10;Kaku;A1;ON;              => protocol;address;action (ON/OFF)
+10;NewKaku;00c142;1;ON;     => protocol;address;button number;action (ON/OFF/ALLON/ALLOFF/15 - 1 to 15 for direct dim level)
+10;HomeEasy;7900b100;ON;    => protocol;address;action (ON/OFF/ALLON/ALLOFF)
+10;SmokeAlert;1234;ON;      => protocol;address;action 
+10;FA500;12345678;ON;       => protocol;address;action (ON/OFF)
+10;Eurodomest;123456;01;ON; => protocol;address;button number;action (ON/OFF/ALLON/ALLOFF)
+10;Selectplus;1234;         => protocol;address
+10;Byron;1234;01            => protocol;address;ringtone;
+10;Blyss;ff98;A1;OFF;       => protocol;address;button;action (ON/OFF/ALLON/ALLOFF)
+
+Control Commands - Send:
+--------------------------
+10;REBOOT;      => Reboot RFLink hardware
+10;PING;        => Is replied with: 20;99;PONG;
+10;VERSION;     => Is replied with: 20;99;"RFLink software version";
+10;RFDEBUG=ON;  => ON/OFF to Enable/Disable showing of RF packet. Is replied with: 20;99;RFDEBUG="state"; 
+
+
+Data Fields:  (LABEL=data)
+------------
+ID=9999         => device ID (often a rolling code and/or device channel number)
+SWITCH=A16      => House/Unit code like A1, P2, B16 or a button number etc.
+CMD=ON          => Command (ON/OFF/ALLON/ALLOFF)
+TEMP=9999       => Temperature (hexadecimal), high bit contains negative sign, needs devision by 10  
+HUM=99          => Humidity (hexadecimal)
+BARO=9999       => Barometric pressure (hexadecimal) 
+HSTATUS=99      => 0=Normal, 1=Comfortable, 2=Dry, 3=Wet
+BFORECAST=99    => 0=No Info/Unknown, 1=Sunny, 2=Partly Cloudy, 3=Cloudy, 4=Rain
+UV=9999         => Light intensity (hexadecimal)
+BAT=OK          => Battery status indicator (OK/LOW)
+RAIN=1234       => rain rate in mm. (hexadecimal) 
+RAINTOT=1234    => total rain in mm. (hexadecimal)
+WINSP=9999      => Wind speed in km. p/h (hexadecimal) needs devision by 10 
+AWINSP=9999     => Average Wind speed in km. p/h (hexadecimal) needs devision by 10 
+WINGS=9999      => Wind Gust in km. p/h (hexadecimal)
+WINDIR=123      => Wind direction (0-360 degrees) (decimal)
+WINCHL          => wind chill (hexadecimal)
+WINTMP=1234     => Wind meter temperature reading (hexadecimal)
+CHIME=123       => Chime/Doorbell melody number
+SMOKEALERT=ON   => ON/OFF
+PIR=ON          => ON/OFF
+
+Sample data:
+------------
+20;2D;UPM/Esic;ID=0001;TEMP=00cf;HUM=16;BAT=OK;
+20;6A;UPM/Esic;ID=1002;WINSP=0041;WINDIR=5A;BAT=OK;
+20;08;UPM/Esic;ID=1003;RAIN=0010;BAT=OK;
+20;31;Mebus;ID=c201;TEMP=00cf;
+20;32;Auriol;ID=008f;TEMP=00d3;BAT=OK;
+20;A2;Auriol V2;ID=008f;TEMP=00a3;BAT=LOW;
+20;33;Cresta;ID=3001;TEMP=00b0;HUM=50;
+20;0C;Cresta;ID=8001;RAIN=001c;
+20;47;Cresta;ID=8001;WINDIR=0002;WINSP=0060;WINGS=0088;WINCHL=b0;
+20;47;Cresta;ID=8001;TEMP=00b0;UV=00d0;
+20;36;Alecto V1;ID=ec02;TEMP=00d1;HUM=14;
+20;07;Mebus;ID=ea01;TEMP=0017;
+20;3D;Alecto V1;ID=2000;TEMP=0011;HUM=61;
+20;26;Alecto V1;ID=0086;RAIN=02ac;
+20;30;Alecto V1;ID=0020;WINSP=0068;
+20;16;Alecto V1;ID=0020;WINSP=0020;
+20;17;Alecto V1;ID=0020;WINDIR=0002;WINGS=0088;
+20;36;Alecto V1;ID=0020;WINDIR=0002;WINGS=0040;
+20;74;Oregon TempHygro;ID=0ACC;TEMP=00be;HUM=40;BAT=OK;
+20;b3;Oregon TempHygro;ID=1a2d;TEMP=00dd;HUM=43;BAT=OK;
+20;e5;Oregon BTHR;ID=5a6d;TEMP=00be;HUM=40;BARO=03d7;BAT=OK;
+20;46;Oregon Rain;ID=2a1d;RAIN=0012;RAINTOT=0012;BAT=OK;
+20;83;Oregon Rain2;ID=2a19;RAIN=002a;RAINTOT=0054;BAT=OK;
+20;32;Oregon Wind;ID=1a89;WDIR=0045;WINSP=0068;AWINSP=0050;BAT=OK;
+20;4a;Oregon Wind2;ID=3a0d;WDIR=0021;WINSP=0040;AWINSP=005a;BAT=OK;
+20;ba;Oregon UVN128/138;ID=ea7c;UV=0030;BAT=OK;
+20;AF;SelectPlus;ID=1bb4;CHIME=01;
+20;FC;Plieger York;ID=dd01;CHIME=02;
+20;47;Byron SX;ID=a66a;CHIME=A9;
+20;12;Pir;ID=aa66;PIR=ON;
+20;63;SmokeAlert;ID=1234;SMOKEALERT=ON;
+20;06;Kaku;ID=41;SWITCH=1;CMD=ON;
+20;0C;Kaku;ID=41;SWITCH=2;CMD=OFF;
+20;0D;Kaku;ID=41;SWITCH=2;CMD=ON;
+20;46;Kaku;ID=44;SWITCH=4;CMD=OFF;
+20;E0;NewKaku;ID=cac142;SWITCH=1;CMD=ALLOFF;
+20;3B;NewKaku;ID=cac142;SWITCH=3;CMD=OFF;
+20;0B;NewKaku;ID=000005;SWITCH=2;CMD=ON;
+20;0E;NewKaku;ID=000005;SWITCH=2;CMD=OFF;
+20;12;NewKaku;ID=000002;SWITCH=2;CMD=OFF;
+20;1E;NewKaku;ID=00000a;SWITCH=2;CMD=OFF;
+20;1F;NewKaku;ID=00000a;SWITCH=2;CMD=ON;
+20;01;NewKaku;ID=000007;SWITCH=2;CMD=OFF;
+20;04;NewKaku;ID=000007;SWITCH=2;CMD=ON;
+20;04;NewKaku;ID=000007;SWITCH=2;CMD=SET_LEVEL=14; 
+20;0C;HomeEasy;ID=7900b200;SWITCH=0b;CMD=ALLON;
+20;AD;FA500;ID=0d00b900;SWITCH=0001;CMD=UNKOWN;
+20;AE;FA500;ID=0a01;SWITCH=0a01;CMD=OFF;
+20;03;Eurodomest;ID=03696b;SWITCH=00;CMD=OFF;
+20;04;Eurodomest;ID=03696b;SWITCH=07;CMD=ALLOFF;
+20;41;Conrad RSL2;ID=010002;SWITCH=03;CMD=ON;
+20;47;Blyss;ID=ff98;SWITCH=A1;CMD=ON;
+20;73;Kambrook;ID=010203;SWITCH=A1;CMD=OFF;
