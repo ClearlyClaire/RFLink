@@ -562,6 +562,7 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
       // 5A 6D 00 7A 10 23 30 83 86 31
       // 5+a+6+d+7+a+1+2+3+3+8+3=47 -a=3d  +8=4f +8+6=55      
       // 5+a+6+d+7+a+1+2+3+3=3c-a=32
+      // 5+a+6+d+7+a+1+2+3+3+0+8+3+8+6=55 -a =4b +3=4e !=1
       // 0  1  2  3  4  5  6  7  8  9
       if(id == 0x5a6d || id == 0x5a5d || id == 0x5d60) {
         // -------------       
@@ -629,6 +630,7 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
       // 2a1d  Rain Gauge: RGR126, RGR682, RGR918, PCR122
       // 2A1D0065502735102063 
       // 2+A+1+D+0+0+6+5+5+0+2+7+3+5+1+0+2+0=3e-a=34 != 63 
+      // 2+A+1+D+0+0+6+5+5+0+2+7+3+5+1+0+2+0+6=44-a=3A 
       // ==================================================================================
       if(id == 0x2a1d || id == 0x2d10 || id == 0x2914) { // Rain sensor
         //Checksum - add all nibbles from 0 to 8, subtract 9 and compare
@@ -842,7 +844,19 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
       } else
       // ==================================================================================
       // *aec  Date&Time: RTGR328N
+      // 8A EC 13 FC 60 81 43 91 11 30 0 0 0 ;
+      // 8+A+E+C+1+3+F+C+6+0+8+1+4+3+9+1=6B -A=61  != 30
+      // 8+A+E+C+1+3+F+C+6+0+8+1+4+3+9=6a-A=60 0=0
       // NO CRC YET
+      //20;06;Oregon Unknown;DEBUG=8A EC 13 FC 60 81 43 91 11 30 0 0 0 ;
+      //20;20;Oregon Unknown;DEBUG=8A EC 13 FC 40 33 44 91 11 30 0 0 0 ;
+
+      
+      // OSV3 2A19048E399393250010 
+      //      01234567890123456789
+      //      0 1 2 3 4 5 6 7 8 9
+      // 2+A+1+9+0+4+8+E+3+9+9+3+9+3+2+5=5b-A=51 => 10 
+
       // ==================================================================================
       // 8AEA1378077214924242C16CBD  21:49 29/04/2014 
       // 0 1 2 3 4 5 6 7 8 9 0 1 2
@@ -933,3 +947,4 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
   }      
   return success;
 }
+

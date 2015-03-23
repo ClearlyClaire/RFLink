@@ -39,6 +39,8 @@
  * aaaa aaaa bbbb cccc cccd eeee eeee eeee eeee eeee ffff
  * 0    A    0    0    7  0 7    3    1    7    3    D   
  * Checksum: (0 + A + 0 + 0 + E + 7 + 3 + 1 + 7 + 3) and F = D   D 
+ * Sample:
+ * 20;11;DEBUG;Pulses=88;Pulses(uSec)=1200,875,1125,875,1125,875,1125,900,400,900,1150,875,400,900,1150,875,1125,875,1125,875,1150,875,1150,875,400,900,400,875,375,900,1150,875,1125,875,400,900,1150,875,1125,875,1125,875,400,900,400,875,1125,900,400,875,1150,875,1150,900,1125,875,1150,875,400,900,400,875,400,900,1150,875,400,900,400,875,1125,875,400,900,1150,900,1125,875,1150,875,375,900,400,900,400,900,400;
  * --------------------------------------------------------------------------------------------
  * Rain Packet:
  * Each frame is 46 bits long. It is composed of: 
@@ -78,7 +80,7 @@
  * HUM  D  = humidity value, 8 bits, 0x50 = RH of 50 
  * RAIN D = 
  * WIND d = Wind direction (0-16 in 22.5 degrees steps) D= wind speed
- \*********************************************************************************************/
+  \*********************************************************************************************/
 #define PLUGIN_ID 43
 #define PLUGIN_NAME "LaCrosse"
 
@@ -151,17 +153,15 @@ boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
       if (checksum != (bitstream2 &0x0f )) return false;
       //==================================================================================
       // Only accept temp and humidity packets for now, we need test data for other packet types
-      if (data[2]!= 0x00 && data[2] != 0x0e) return false;
-      if (data[2]==0x0e && humidity==0) return false; // humidity should not be 0
-      //==================================================================================
+      //if (data[2]!= 0x00 && data[2] != 0x0e) return false;
+ 	  //==================================================================================
       // now process the various sensor types      
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( buffer );
-      // ----------------------------------
       if (data[2]== 0) {
+         sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+         Serial.print( buffer );
          Serial.print("LaCrosse;");                       // Label
          sprintf(buffer, "ID=%02x%02x;", data[0], data[1]); // ID    
          Serial.print( buffer );
@@ -173,13 +173,18 @@ boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
          Serial.print( buffer );
       } else
       if (data[2]==0x0e) {
+         humidity=(data[5]*10)+data[6];
+         if (data[2]==0x0e && humidity==0) return false; // humidity should not be 0
+         sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+         Serial.print( buffer );
          Serial.print("LaCrosse;");                       // Label
          sprintf(buffer, "ID=%02x%02x;", data[0], data[1]); // ID    
          Serial.print( buffer );
-         humidity=(data[5]*10)+data[6];
          sprintf(buffer, "HUM=%04x;", humidity);     
          Serial.print( buffer );
       } else {
+         sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+         Serial.print( buffer );
          Serial.print("LaCrosse Unknown;");                       // Label
          Serial.print("DEBUG=");
          for (byte i=0;i<10;i++){

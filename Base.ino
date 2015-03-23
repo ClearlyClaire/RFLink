@@ -1179,6 +1179,18 @@ void loop()
                      sprintf(InputBuffer_Serial,"HomeEasySend 0x%s;", tempbuf);
                      IncomingCommand=true;
                   } else   
+                  if (strncasecmp(InputBuffer_Serial+3,"X10;",4) == 0) { // X10 Command eg. 
+                     //10;X10;123456;4;ON;
+                     //0123456789012345678
+                     InputBuffer_Serial[15]=',';
+                     InputBuffer_Serial[ 9]='0';
+                     InputBuffer_Serial[10]='x';
+                     unsigned int tempbyte1=0;
+                     tempbyte1=str2int(InputBuffer_Serial+9);  // get parameter 1
+                     strcpy(tempbuf,InputBuffer_Serial+14);
+                     sprintf(InputBuffer_Serial,"X10Send %c%s;",tempbyte1, tempbuf);
+                     IncomingCommand=true;
+                  } else   
                   if (strncasecmp(InputBuffer_Serial+3,"SmokeAlert;",11) == 0) { // KAKU Command eg. 
                      //SmokeAlert;123456;ON;
                      //45678901234567890

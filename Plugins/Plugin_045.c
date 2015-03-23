@@ -31,14 +31,12 @@
  * 
  * Sample:
  * 20;34;DEBUG;Pulses=66;Pulses(uSec)=325,3725,325,1825,325,1825,325,1825,325,3700,325,3700,325,3700,325,3700,325,3700,325,1850,300,1825,325,1850,325,1825,325,1850,325,1825,300,1825,325,3725,300,3725,325,1825,325,1825,300,3725,300,1850,325,3725,300,1850,325,3725,300,3700,300,3725,300,1825,325,3700,325,3700,300,3700,325,1825,325;
+ * 20;0A;DEBUG;Pulses=66;Pulses(uSec)=325,1850,300,1850,300,3700,300,1850,300,1850,300,1850,325,1850,300,1850,325,3700,325,1850,300,1850,300,1825,325,1850,300,1850,325,1825,300,1850,325,3725,300,3700,325,1825,300,1850,325,3700,300,3725,300,3725,300,1850,300,1850,300,3725,325,3700,300,1850,300,1825,325,1850,300,3700,300,1850,325;
  \*********************************************************************************************/
 #define PLUGIN_ID 45
 #define PLUGIN_NAME "Auriol"
 
-#define AURIOL_PULSECOUNT 66             // with SIGNAL_TIMEOUT=4
-#define AURIOL_PULSECOUNT_MAX 256        // with SIGNAL_TIMEOUT=5
-
-//uint8_t Plugin_045_ProtocolCRC8( uint8_t *addr, uint8_t len);
+#define AURIOL_PULSECOUNT 66
 
 boolean Plugin_045(byte function, struct NodoEventStruct *event, char *string)
 {
@@ -49,7 +47,7 @@ boolean Plugin_045(byte function, struct NodoEventStruct *event, char *string)
 #ifdef PLUGIN_045_CORE
   case PLUGIN_RAWSIGNAL_IN:
     {
-      if (RawSignal.Number != AURIOL_PULSECOUNT && RawSignal.Number != AURIOL_PULSECOUNT_MAX) return false;
+      if (RawSignal.Number != AURIOL_PULSECOUNT) return false;
 
       unsigned long bitstream1=0;
       byte rc=0;
@@ -65,58 +63,29 @@ boolean Plugin_045(byte function, struct NodoEventStruct *event, char *string)
       byte type=0;
       //==================================================================================
       if (RawSignal.Number == AURIOL_PULSECOUNT) {
-         start=2;
-      } else {
-         // get all the bits we need (32 bits)
-         for(int x=1;x <=255;x++) {
-            if (RawSignal.Pulses[x]*RawSignal.Multiply > 3000) { // find first byte
-               start=x+2; // start position is 2nd byte after the long pulse (which is too short for Nodo to see as a packet break)
-               break;
+		 for(int x=2;x <66;x+=2) {
+            //if(RawSignal.Pulses[x]*RawSignal.Multiply > 1200) {
+            if(RawSignal.Pulses[x]*RawSignal.Multiply > 3000) {
+              bitstream1 = (bitstream1 << 1) | 0x1; 
+            } else {
+              if(RawSignal.Pulses[x]*RawSignal.Multiply < 1600) return false; // pulse lengths between 600-3000 are invalid
+              bitstream1 = (bitstream1 << 1);
             }
-         }
+		 }
       }
-      for(int x=start;x <start+64;x+=2) {
-         //if(RawSignal.Pulses[x]*RawSignal.Multiply > 1200) {
-         if(RawSignal.Pulses[x]*RawSignal.Multiply > 3000) {
-           bitstream1 = (bitstream1 << 1) | 0x1; 
-         } else {
-           if(RawSignal.Pulses[x]*RawSignal.Multiply > 600) return false; // pulse lengths between 600-3000 are invalid
-           bitstream1 = (bitstream1 << 1);
-         }
-      }
-      //==================================================================================
       //==================================================================================
       // First perform a sanity check
-      if (bitstream1 == 0) {
-         //Serial.println("CRC 0 Error");
-         return false;
-      }
+      if (bitstream1 == 0) return false;
       // ------------------------
       // Perform a checksum calculation to make sure the received packet is a valid Auriol packet
       for (int i=1;i<32;i++) {
           checksumcalc=checksumcalc^ ((bitstream1>>i)&0x01);
       }
-      // differentiate between auriol models
-      if ((bitstream1 && 0xff) == 0xF0) { // 
-         if (checksumcalc== (bitstream1&0x01) ) {
-            //Serial.println("CRC 1 Error");
-            return false;
-         }
-      } else {
-        if (checksumcalc!= (bitstream1&0x01) ) {
-            //Serial.println("CRC 2 Error");
-            return false;
-        }
-      }
+      if (checksumcalc != (bitstream1&0x01) ) return false;
       // ------------------------
       // After the checksum check, do another sanity check on some selected bits
       rc = (bitstream1 >> 20) & 0x07;            // get 3 bits, should always be 000
-      if (rc != 0) {
-         //Serial.println("CRC 3 Error");
-         return false; 
-      }
-      //Serial.println(bitstream1,HEX); 
-      //==================================================================================
+      if (rc != 0) return false; 
       //==================================================================================
       bat= (bitstream1 >> 23) & 0x01;            // get battery strength indicator
       temperature = (bitstream1 >> 8) & 0xfff;   // get 12 temperature bits

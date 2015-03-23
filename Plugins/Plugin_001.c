@@ -132,7 +132,23 @@ boolean Plugin_001(byte function, struct NodoEventStruct *event, char *string)
          }
       }
       // ==========================================================================
-      // End of Signal translation Flamingo FA500R
+      // End of Signal Translation
+      // ==========================================================================      
+      // ==========================================================================
+      // Beginning of Signal translation for Auriol
+      // ==========================================================================
+      if (RawSignal.Number == 511) {
+         int pos1=74;
+         int pos2=74+74;
+         int pos3=74+74+74;
+         if (RawSignal.Pulses[pos1]*RawSignal.Multiply > 3400 && RawSignal.Pulses[pos2]*RawSignal.Multiply > 3400 && RawSignal.Pulses[pos3]*RawSignal.Multiply > 3400) {
+            RawSignal.Pulses[pos1]=0;
+            RawSignal.Number=74;
+            break;
+         }
+      }
+      // ==========================================================================
+      // End of Signal Translation
       // ==========================================================================      
       // ==========================================================================
       // Beginning of Signal translation for Byron & Lidl Doorbells

@@ -57,6 +57,7 @@ boolean Plugin_005(byte function, struct NodoEventStruct *event, char *string)
       unsigned long address=0;
       // ==========================================================================
       if (RawSignal.Number!= (Eurodomest_PulseLength) ) return false; 
+      if(RawSignal.Pulses[49]*RawSignal.Multiply > 400) return false;  // last pulse (stop bit) needs to be short, otherwise no Eurodomest protocol
       // get all 24 bits
       for(int x=2;x < Eurodomest_PulseLength;x+=2) {
           if(RawSignal.Pulses[x]*RawSignal.Multiply > 400) {
