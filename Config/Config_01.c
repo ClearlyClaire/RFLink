@@ -41,6 +41,10 @@
 #define PLUGIN_008
 #define PLUGIN_008_CORE
 
+// X10 RF
+#define PLUGIN_009
+#define PLUGIN_009_CORE
+
 // Home Easy EU receive
 #define PLUGIN_015
 #define PLUGIN_015_CORE
