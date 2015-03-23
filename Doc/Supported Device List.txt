@@ -19,6 +19,7 @@ Intertek Eurodomest 972080(Automatic Code Learning) (Send + Receive)
 Blyss                                               (Send + Receive)
 Conrad RSL2                                         (Receive only)
 Kambrook RF3399/RF3405/RF3672/RF3689/RF4471R        (Receive only)
+X10 RF switches                                     (Send + Receive)    
 ============================================================================
 Weather Sensors:
 ----------------
