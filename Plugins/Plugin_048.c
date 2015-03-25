@@ -532,7 +532,7 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         temp = ((osdata[5]>>4) * 100)  + ((osdata[5] & 0x0F) * 10) + ((osdata[4] >> 4));
         if ((osdata[6] & 0x0F) >= 8) temp=temp | 0x8000;
         // -------------       
-        hum = ((osdata[7] & 0x0F)*10)+ (osdata[6] >> 4);
+        hum = ((osdata[7] & 0x0F)*16)+ (osdata[6] >> 4);
         // ----------------------------------
         // Output
         // ----------------------------------
@@ -540,7 +540,7 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         Serial.print( buffer );
         // ----------------------------------
         Serial.print("Oregon TempHygro;");               // Label
-        sprintf(buffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
+        sprintf(buffer, "ID=%02x%02x;", osdata[1],osdata[2]);   // ID    
         Serial.print( buffer );
         sprintf(buffer, "TEMP=%04x;", temp);     
         Serial.print( buffer );

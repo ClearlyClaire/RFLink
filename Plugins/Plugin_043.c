@@ -173,14 +173,14 @@ boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
          Serial.print( buffer );
       } else
       if (data[2]==0x0e) {
-         humidity=(data[5]*10)+data[6];
+         humidity=(data[5]*16)+data[6];
          if (data[2]==0x0e && humidity==0) return false; // humidity should not be 0
          sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
          Serial.print( buffer );
          Serial.print("LaCrosse;");                       // Label
          sprintf(buffer, "ID=%02x%02x;", data[0], data[1]); // ID    
          Serial.print( buffer );
-         sprintf(buffer, "HUM=%04x;", humidity);     
+         sprintf(buffer, "HUM=%02x;", humidity);     
          Serial.print( buffer );
       } else {
          sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 

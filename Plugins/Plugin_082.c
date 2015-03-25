@@ -1,4 +1,4 @@
-//#######################################################################################################
+    //#######################################################################################################
 //##                    This Plugin is only for use with the RFLink software package                   ##
 //##                                     Plugin-082 Mertik Maxitrol                                    ##
 //#######################################################################################################
@@ -48,6 +48,8 @@
 #define PLUGIN_082_UP           "Up"
 #define PLUGIN_082_DOWN         "Down"
 #define PLUGIN_082_STOP         "Stop"
+#define PLUGIN_082_GO_UP        "Go_Up"
+#define PLUGIN_082_GO_DOWN      "Go_Down"
 
 #define PLUGIN_082_RFSTART      100
 #define PLUGIN_082_RFSPACE      250
@@ -137,6 +139,11 @@ boolean Plugin_082(byte function, struct NodoEventStruct *event, char *string)
       else if (event->Par2 == 3) bitstream2=0x7;
       else if (event->Par2 == 4) bitstream2=0x3;
       else if (event->Par2 == 5) bitstream2=0x8;
+      else if (event->Par2 == 6) bitstream2=0xA;
+      else if (event->Par2 == 7) bitstream2=0xC;
+      else {
+           return false;
+      }
       bitstream1=0x4;
       bitstream= event->Par1;
 
@@ -208,6 +215,8 @@ boolean Plugin_082(byte function, struct NodoEventStruct *event, char *string)
        if(strcasecmp(TempStr,PLUGIN_082_OFF)==0) event->Par2=3;
        if(strcasecmp(TempStr,PLUGIN_082_UP)==0) event->Par2=1;
        if(strcasecmp(TempStr,PLUGIN_082_DOWN)==0) event->Par2=2;
+       if(strcasecmp(TempStr,PLUGIN_082_GO_UP)==0) event->Par2=6;
+       if(strcasecmp(TempStr,PLUGIN_082_GO_DOWN)==0) event->Par2=7;
     }
     free(TempStr);
     break;
@@ -225,10 +234,13 @@ boolean Plugin_082(byte function, struct NodoEventStruct *event, char *string)
        // break;
        if (event->Par2==1) strcat(string,"Up");
        else if (event->Par2==2) strcat(string,"Down");
-       else if (event->Par2==4) strcat(string,"Off");
+       else if (event->Par2==3) strcat(string,"Off");
+       else if (event->Par2==4) strcat(string,"On");
        else if (event->Par2==5) strcat(string,"Stop");
+       else if (event->Par2==6) strcat(string,"Go Up");
+       else if (event->Par2==7) strcat(string,"Go Down");
        else {
-         strcat(string,"On");
+         return false;
        }
        break;
     }

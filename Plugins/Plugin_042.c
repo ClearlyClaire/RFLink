@@ -200,30 +200,30 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
          if (rc==10 && devicecode==3) {               // rain
             units = (bitstream2 >> 4) & 0x0f;         
             rain = (bitstream2 >> 8) & 0x7f;
-            rain = rain * 7;                          // Serial.print( (float)rain * 0.7 );
+            rain = rain * 7;                        // Serial.print( (float)rain * 0.7 );
             //==================================================================================
             // Output
             // ----------------------------------
             sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
             Serial.print( buffer );
-            Serial.print("UPM/Esic;");                       // Label
+            Serial.print("UPM/Esic;");              // Label
             sprintf(buffer, "ID=%02x%02x;", rc, devicecode); // ID    
             Serial.print( buffer );
             sprintf(buffer, "RAIN=%04x;", rain);     
             Serial.print( buffer );
-            if (battery==1) {                                // battery status
+            if (battery==1) {                       // battery status
                Serial.print("BAT=LOW;");               
             } else {
                Serial.print("BAT=OK;");                
             }
             Serial.println();
             //==================================================================================
-         } else {                                     // temperature & Humidity
-            units = (bitstream2 >> 4) & 0x0f;         // temperature
+         } else {                                   // temperature & Humidity
+            units = (bitstream2 >> 4) & 0x0f;       // temperature
             temperature = (bitstream2 >> 8) & 0x7f;
             temperature = temperature-50;
             temperature = (temperature*10) + units;
-            humidity = (bitstream2 >> 15) & 0xff;     // humidity
+            humidity = (bitstream2 >> 15) & 0xff;   // humidity
             humidity = humidity / 2;
             //if (humidity==0) return false;            // dont accept Bad humidity status
             //if (temperature > 1000) return false;     // dont accept bad temperature
@@ -232,14 +232,14 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
             // ----------------------------------
             sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
             Serial.print( buffer );
-            Serial.print("UPM/Esic;");                       // Label
+            Serial.print("UPM/Esic;");              // Label
             sprintf(buffer, "ID=%02x%02x;", rc, devicecode); // ID    
             Serial.print( buffer );
             sprintf(buffer, "TEMP=%04x;", temperature);     
             Serial.print( buffer );
-            sprintf(buffer, "HUM=%02x;", humidity);     
+            sprintf(buffer, "HUM=%02d;", humidity); // Humidity 0x15 = 21% decimal 
             Serial.print( buffer );
-            if (battery==1) {                           // battery status
+            if (battery==1) {                       // battery status
                Serial.print("BAT=LOW;");               
             } else {
                Serial.print("BAT=OK;");                
@@ -248,14 +248,14 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
             //==================================================================================
          }
       } else {
-         units = (bitstream2 >> 1) & 0x7f;         // temperature
+         units = (bitstream2 >> 1) & 0x7f;          // temperature
          temperature = (bitstream2 >> 8) & 0xff;
          temperature = temperature-50;
          temperature = (temperature*100) + units;
          temperature = temperature/10;
-         humidity = (bitstream2 >> 16) & 0x7f;     // humidity
-         //if (humidity==0) return false;            // dont accept Bad humidity status
-         //if (temperature > 1000) return false;     // dont accept bad temperature
+         humidity = (bitstream2 >> 16) & 0x7f;      // humidity
+         //if (humidity==0) return false;             // dont accept Bad humidity status
+         //if (temperature > 1000) return false;      // dont accept bad temperature
          //==================================================================================
          // Output
          // ----------------------------------

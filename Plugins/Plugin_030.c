@@ -146,7 +146,7 @@ boolean Plugin_030(byte function, struct NodoEventStruct *event, char *string)
         temperature = (bitstream >> 12) & 0xfff;
         //fix 12 bit signed number conversion
         if ((temperature & 0x800) == 0x800) temperature = temperature - 0x1000;
-        humidity = (10 * nibble7) + nibble6;
+        humidity = (16 * nibble7) + nibble6;
         //==================================================================================
         // Output
         // ----------------------------------

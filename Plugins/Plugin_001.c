@@ -173,11 +173,11 @@ boolean Plugin_001(byte function, struct NodoEventStruct *event, char *string)
                     RawSignal.Pulses[j+5]*RawSignal.Multiply > 1000 && RawSignal.Pulses[j+6]*RawSignal.Multiply > 1000 &&
                     RawSignal.Pulses[j+7]*RawSignal.Multiply > 1000 && RawSignal.Pulses[j+8]*RawSignal.Multiply > 1000 ) {  //input is going to fast skip to where new part is going to start
 
-                    int pos1=j+9;
-                    for (i=0;i<81;i++){
+                    int pos1=j;
+                    for (i=0;i<90;i++){
                         RawSignal.Pulses[1+i]=RawSignal.Pulses[pos1+1+i]; // new filling of the pulses
                     }
-                    RawSignal.Number=81;
+                    RawSignal.Number=90;
                     break;
                 }  
              }
