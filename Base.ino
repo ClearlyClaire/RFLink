@@ -1095,10 +1095,15 @@ void loop()
                if (strncmp (InputBuffer_Serial,"10;",3) == 0) {        // Command from Master to RFLink
                   // Cycle through command list to translate
                   if (strncasecmp(InputBuffer_Serial+3,"KAKU;",5) == 0) { // KAKU Command eg. Kaku;A1;On
-                     //10;Kaku;A1;ON;
-                     InputBuffer_Serial[10]=',';
-                     strcpy(tempbuf,InputBuffer_Serial+8);
-                     sprintf(InputBuffer_Serial,"KakuSend %s;", tempbuf);
+                     //10;Kaku;00004d;1;OFF                     
+                     //012345678901234567890
+                     InputBuffer_Serial[16]=',';
+                     InputBuffer_Serial[10]='0';
+                     InputBuffer_Serial[11]='x';
+                     unsigned int tempbyte1=0;
+                     tempbyte1=str2int(InputBuffer_Serial+10);  // get parameter 1
+                     strcpy(tempbuf,InputBuffer_Serial+15);
+                     sprintf(InputBuffer_Serial,"KakuSend %c%s;",tempbyte1, tempbuf);
                      IncomingCommand=true;
                   } else  
                   if (strncasecmp(InputBuffer_Serial+3,"FA500;",5) == 0) { // FA500 Command eg. FA500;A;On
