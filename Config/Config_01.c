@@ -6,14 +6,17 @@
 // ****************************************************************************************************************************************
 #define UNIT_NODO        1 // Nodo unit number after sending a [Reset] command
 #define CLOCK         true // true = include code for Real Time Clock into the compilation.
-#define NODO_MEGA     true // true = Nodo Mega, false=Nodo-Small
+#define NODO_MEGA     true // DO NOT CHANGE
 
 // Translation Plugin for oversized packets due to their breaks/pause being too short between packets
-// Used for Flamingo FA500R and others
+// Used for Flamingo FA500R and various others, do NOT exclude this plugin.
 #define PLUGIN_001
 #define PLUGIN_001_CORE
 
-// Kaku : Klik-Aan-Klik-Uit (with code wheel)
+// ------------------------------------------------------------------------
+// -- Any of the following protocols can be excluded whenever not needed --
+// ------------------------------------------------------------------------
+// Kaku : Klik-Aan-Klik-Uit (with code wheel) aka ARC
 #define PLUGIN_002
 #define PLUGIN_002_CORE
 
@@ -122,8 +125,8 @@
 #define PLUGIN_072_CORE
 
 // Lidl doorbell
-//#define PLUGIN_073
-//#define PLUGIN_073_CORE
+#define PLUGIN_073
+#define PLUGIN_073_CORE
 
 // Byron MP001 doorbell
 //#define PLUGIN_074
@@ -166,7 +169,7 @@
 #define PLUGIN_254
 #define PLUGIN_254_CORE
 
-//Sample plugin, do not compile => use it as template to make your own plugins
+//Sample plugin, do not compile => use it as template to make your own plugin
 //#define PLUGIN_255
 //#define PLUGIN_255_CORE
 // -------------------
