@@ -1196,6 +1196,14 @@ void loop()
                      sprintf(InputBuffer_Serial,"X10Send %c%s;",tempbyte1, tempbuf);
                      IncomingCommand=true;
                   } else   
+                  if (strncasecmp(InputBuffer_Serial+3,"MERTIK;",7) == 0) { // KAKU Command eg.
+                     //10;MERTIK;64;UP;
+                     //0123456789012345
+                     InputBuffer_Serial[12]=',';
+                     strcpy(tempbuf,InputBuffer_Serial+10);
+                     sprintf(InputBuffer_Serial,"MaxiSend %s;", tempbuf);
+                     IncomingCommand=true;
+                  } else
                   if (strncasecmp(InputBuffer_Serial+3,"SmokeAlert;",11) == 0) { // KAKU Command eg. 
                      //SmokeAlert;123456;ON;
                      //45678901234567890
