@@ -110,6 +110,7 @@ boolean Plugin_046(byte function, struct NodoEventStruct *event, char *string)
       }
       Serial.println();
       //==================================================================================
+      RawSignal.Repeats=true;                    // suppress repeats of the same RF packet 
       RawSignal.Number=0;
       success = true;
       break;

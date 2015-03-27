@@ -82,6 +82,10 @@
 #define PLUGIN_043
 #define PLUGIN_043_CORE
 
+// Auriol v3
+#define PLUGIN_044
+#define PLUGIN_044_CORE
+
 // Auriol
 #define PLUGIN_045
 #define PLUGIN_045_CORE
@@ -125,8 +129,8 @@
 #define PLUGIN_072_CORE
 
 // Lidl doorbell
-#define PLUGIN_073
-#define PLUGIN_073_CORE
+//#define PLUGIN_073
+//#define PLUGIN_073_CORE
 
 // Byron MP001 doorbell
 //#define PLUGIN_074

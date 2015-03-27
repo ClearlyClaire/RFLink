@@ -45,7 +45,11 @@ LaCrosse:
           WS7000-15: Anemometer, WS7000-16: Rain precipitation, WS2500-19: Brightness Luxmeter, 
           WS7000-20: Thermo/Humidity/Barometer
 Auriol:   
-          Z31743, Z31055A, Rubicson
+          Z31743, Rubicson
+Auriol V2:   
+          Z31055A-TX 
+Auriol V3:   
+          Z32171A
 Oregon V1/2/3:
           THC238, THC268, THN132N, THWR288A, THRN122N, THN122N, AW129, AW131, THGR268, THGR122X,
           THGN122N, THGN123N, THGR122NX, THGR228N, THGR238, WTGR800, THGR918, THGRN228NX, THGN500,
