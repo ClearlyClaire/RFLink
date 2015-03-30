@@ -13,6 +13,7 @@ Flamingo FA500R/S/DSS/WD (Automatic Code Learning)  (Send + Receive)
 -   SilverCrest 91210/60494 RCS AAA3680
 -   Mumbi M-FS300
 -   Unitec 48110 EIM 826 / 48111 EIM 821
+-   Quigg GT-1000 RC / Quigg GT-FSI-08 
 
 Elro Home Comfort AB600                             (Send + Receive)
 Intertek Eurodomest 972080(Automatic Code Learning) (Send + Receive)
@@ -47,7 +48,7 @@ LaCrosse:
 Auriol:   
           Z31743, Rubicson
 Auriol V2:   
-          Z31055A-TX 
+          Z31055A-TX, Xiron 
 Auriol V3:   
           Z32171A
 Oregon V1/2/3:

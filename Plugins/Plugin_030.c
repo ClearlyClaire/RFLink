@@ -105,17 +105,15 @@ boolean Plugin_030(byte function, struct NodoEventStruct *event, char *string)
       byte basevar=0;
       char buffer[11]=""; 
 
-      for(byte x=2; x<=64; x=x+2)
-        {
-        if(RawSignal.Pulses[x]*RawSignal.Multiply > 0xA00) bitstream = ((bitstream >> 1) |(0x1L << 31)); 
+      for(byte x=2; x<=64; x=x+2) {
+        if(RawSignal.Pulses[x]*RawSignal.Multiply > 2560) bitstream = ((bitstream >> 1) |(0x1L << 31)); 
         else bitstream = (bitstream >> 1);
-        }
+      }
 
-      for(byte x=66; x<=72; x=x+2)
-        {
-        if(RawSignal.Pulses[x]*RawSignal.Multiply > 0xA00) checksum = ((checksum >> 1) |(0x1L << 3)); 
+      for(byte x=66; x<=72; x=x+2) {
+        if(RawSignal.Pulses[x]*RawSignal.Multiply > 2560) checksum = ((checksum >> 1) |(0x1L << 3)); 
         else checksum = (checksum >> 1);
-        }
+      }
 
       nibble7 = (bitstream >> 28) & 0xf;
       nibble6 = (bitstream >> 24) & 0xf;

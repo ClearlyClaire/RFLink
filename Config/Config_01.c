@@ -90,17 +90,13 @@
 #define PLUGIN_045
 #define PLUGIN_045_CORE
 
-// Auriol v2
+// Auriol v2 / Xiron
 #define PLUGIN_046
 #define PLUGIN_046_CORE
 
 // Oregon V1/2/3
 #define PLUGIN_048
 #define PLUGIN_048_CORE
-
-// Xiron 
-//#define PLUGIN_096
-//#define PLUGIN_096_CORE
 
 // -------------------
 // PIR's
@@ -140,8 +136,8 @@
 // Smoke detectors
 // -------------------
 // Flamingo FA20 / KD101 smoke detector receive
-#define PLUGIN_081
-#define PLUGIN_081_CORE
+#define PLUGIN_080
+#define PLUGIN_080_CORE
 
 // Flamingo FA20 / KD101 smoke detector transmit
 #define PLUGIN_081
