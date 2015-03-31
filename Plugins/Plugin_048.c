@@ -763,8 +763,8 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
       // ==================================================================================
       if(id == 0x3A0D || id == 0x1984 || id == 0x1994 ) {
         if ( checksum(1,9,osdata[9]) !=0) {
-            Serial.print("CRC Error, "); 
-            //break;
+            //Serial.print("CRC Error, "); 
+            break;
         }
         wdir = ((osdata[5]>>4) * 100)  + ((osdata[5] & 0x0F * 10) ) + (osdata[4] >> 4);    
         wspeed = ((osdata[7] & 0x0F) * 100)  + ((osdata[6]>>4) * 10)  + ((osdata[6] & 0x0F)) ;

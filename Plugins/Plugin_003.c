@@ -22,7 +22,7 @@
  * 4 x Method 1 - 28 bit code
  * 6 x method 2 - AC compatible 
  * 5 x method 3 - 24/12 bit code 
- * It appears that the FA500S is only capable to react to the first method.
+ * It appears that the FA500S is only capable to react to the first method. So this has to be used to switch sockets
  * Nodo can only distinguish the 3rd method properly. Method 1 and 2 have to be pulled apart first which
  * is done via plugin 001.
  *
@@ -36,6 +36,8 @@
  *   50027.01B FLF-130105 
  * KT50039.01A FLF-13-06-03 Chip marking: S007V0.1 
  * KT50040.01A FLF-13-06-04
+ *
+ * http://forum.arduino.cc/index.php?topic=202556.0
  *
  * Sample:
  * 20;60;DEBUG;Pulses=24;Pulses(uSec)=325,800,275,800,825,225,275,800,275,825,275,800,825,225,275,800,825,225,275,800,275,800,275;
