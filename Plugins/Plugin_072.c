@@ -5,14 +5,8 @@
 /*********************************************************************************************\
  * This Plugin takes care of reception And sending of the Byron SX doorbell
  *
- * Auteur             : Maurice Ruiter (Dodge)
- * Support            : www.nodo-domotica.nl
- * Datum              : 1-3-2015
- * Versie             : 1.0
- * Compatibiliteit    : Vanaf Nodo build nummer ???
- * Syntax             : "Byron <Par1:Beltone>, <Par2:Sensor ID>"
- * Syntax             : "ByronSend <Par1:Beltone>, <Par2:Sensor ID>"
- * Compatibility      : RFLink 1.0
+ * Author             : Maurice Ruiter (Dodge)
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  *********************************************************************************************
@@ -89,6 +83,7 @@ boolean Plugin_072(byte function, struct NodoEventStruct *event, char *string)
       if (RawSignal.Number !=BYRON_PULSECOUNT) return false;
       //==================================================================================
       // get bytes 
+      if (RawSignal.Pulses[0] != PLUGIN_ID) return false; // only accept plugin1 translated packets
       for(byte x=0;x<RawSignal.Number-1;x++) {
          if (RawSignal.Pulses[x]*RawSignal.Multiply < 425) {
             if ((bitcounter < 9) && (bitcounter > 4)) {

@@ -6,9 +6,8 @@
  * This plugin takes care of long packets that actually contain multiple RF packets 
  * Usually caused by a very short delay between RF packets 
  * 
- * Auteur             : StuntTeam
- * Support            : www.nodo-domotica.nl
- * Versie             : 18-01-2015, Versie 1.0, P.K.Tonkes: Eerste versie
+ * Author             : StuntTeam
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  ***********************************************************************************************
@@ -63,7 +62,6 @@
 
 boolean Plugin_001(byte function, struct NodoEventStruct *event, char *string)
   {
-  boolean success=false;        // always false as we only do conversion of long packets and no actual processing, the converted packet must be processed by other plugins
   byte FAconversiontype=1;      // 0=FA500R to Method 2
                                 // 1=FA500R to Method 1
   byte HEconversiontype=0;      // 0=No conversion, 1=conversion to Elro 58 pulse protocol (same as FA500R Method 1)
@@ -80,14 +78,14 @@ boolean Plugin_001(byte function, struct NodoEventStruct *event, char *string)
       // DEBUG
       // ==========================================================================
       if (RFDebug==true) {
-         if(RawSignal.Number<8)return false;     // make sure the packet is long enough to have a meaning 
+         if (RawSignal.Number < 8) return false;    // make sure the packet is long enough to have a meaning 
          // ----------------------------------
          // Output
          // ----------------------------------
          sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
          Serial.print( buffer );
          // ----------------------------------
-         Serial.print(F("DEBUG;Pulses="));      // debug data
+         Serial.print(F("DEBUG;Pulses="));          // debug data
          Serial.print(RawSignal.Number);
          Serial.print(F(";Pulses(uSec)="));      
          for(i=1;i<RawSignal.Number;i++) {
@@ -97,26 +95,7 @@ boolean Plugin_001(byte function, struct NodoEventStruct *event, char *string)
          Serial.println(";");
       }      
       // ==========================================================================
-      // Beginning of Signal translation for HomeEasy HE842
-      // ==========================================================================
-      if (RawSignal.Number > 460 && RawSignal.Number < 470) {
-         if (HEconversiontype==0) {          // Reject the entire packet 
-            RawSignal.Number=0;                 
-            success=true;
-         } else {                            // Convert to Elro Method 1 (same as FA500 Method 1)
-            int pos1=RawSignal.Number - 58;
-            if (RawSignal.Pulses[pos1]*RawSignal.Multiply > 4000) {
-               for (i=0;i<58;i++){
-                   RawSignal.Pulses[1+i]=RawSignal.Pulses[pos1+1+i];
-               }
-               RawSignal.Number=58;
-               break;
-            }
-         }
-      } 
-      // ==========================================================================
-      // End of Signal translation HomeEasy HE842
-      // ==========================================================================      
+      if (RawSignal.Number < 330) return false;     // make sure the packet is an oversized packet
       // ==========================================================================
       // Beginning of Signal translation for Flamingo FA500R
       // ==========================================================================
@@ -129,21 +108,42 @@ boolean Plugin_001(byte function, struct NodoEventStruct *event, char *string)
                 for (i=0;i<130;i++){ 
                     RawSignal.Pulses[3+i]=RawSignal.Pulses[pos1+1+i];
                 }
-                RawSignal.Number=132;
-                break;
+                RawSignal.Number=132;               // New packet length
+                return false;                       // Conversion done, stop plugin 1 and continue with regular plugins
             } else 
             if (FAconversiontype==1) {              // Convert to Flamingo FA500R Method 1
                 for (i=0;i<58;i++){
                     RawSignal.Pulses[1+i]=RawSignal.Pulses[pos2+1+i];
                 }
                 RawSignal.Pulses[0]=RawSignal.Pulses[pos3];  // Trick: use the on/off command from the method 2 (newkaku) packet and pass via Pulses[0]
-                RawSignal.Number=58;
-                break;
+                RawSignal.Number=58;                // New packet length
+                return false;                       // Conversion done, stop plugin 1 and continue with regular plugins
             }
          }
       }
       // ==========================================================================
       // End of Signal Translation
+      // ==========================================================================      
+      // ==========================================================================
+      // Beginning of Signal translation for HomeEasy HE842
+      // ==========================================================================
+      if (RawSignal.Number > 460 && RawSignal.Number < 470) {
+         if (HEconversiontype==0) {                 // Reject the entire packet 
+            RawSignal.Number=0;                 
+            return true;                            // abort processing 
+         } else {                                   // Convert to Elro Method 1 (same as FA500 Method 1)
+            int pos1=RawSignal.Number - 58;
+            if (RawSignal.Pulses[pos1]*RawSignal.Multiply > 4000) {
+               for (i=0;i<58;i++){
+                   RawSignal.Pulses[1+i]=RawSignal.Pulses[pos1+1+i];
+               }
+               RawSignal.Number=58;                 // New packet length
+               return false;                        // Conversion done, stop plugin 1 and continue with regular plugins
+            }
+         }
+      } 
+      // ==========================================================================
+      // End of Signal translation HomeEasy HE842
       // ==========================================================================      
       // ==========================================================================
       // Beginning of Signal translation for Auriol & Xiron
@@ -155,29 +155,31 @@ boolean Plugin_001(byte function, struct NodoEventStruct *event, char *string)
          int offset=0;
          if (RawSignal.Pulses[pos1]*RawSignal.Multiply > 3300) {
             if (RawSignal.Pulses[pos2]*RawSignal.Multiply > 3300 && RawSignal.Pulses[pos3]*RawSignal.Multiply > 3300) {
-               RawSignal.Pulses[pos1]=0;
-               RawSignal.Number=74;
-               break;
+               RawSignal.Number=74;                 // New packet length
+               RawSignal.Pulses[0]=46;              // signal the plugin number that should process this packet
+               return false;                        // Conversion done, stop plugin 1 and continue with regular plugins
             }
          }
          offset=2;
-         if (RawSignal.Pulses[pos1+offset]*RawSignal.Multiply > 3300) {
-            if (RawSignal.Pulses[pos2+offset]*RawSignal.Multiply > 3300 && RawSignal.Pulses[pos3+offset]*RawSignal.Multiply > 3300) {
+         if (RawSignal.Pulses[offset]*RawSignal.Multiply > 3300) {
+            if (RawSignal.Pulses[pos1+offset]*RawSignal.Multiply > 3300 && RawSignal.Pulses[pos2+offset]*RawSignal.Multiply > 3300) {
                for (i=0;i<74;i++){
-                   RawSignal.Pulses[1+i]=RawSignal.Pulses[pos1+i+offset]; // new filling of the pulses
+                   RawSignal.Pulses[1+i]=RawSignal.Pulses[offset+i+1]; // reorder pulse array
                }
-               RawSignal.Number=74;
-               break;
+               RawSignal.Number=74;                 // New packet length
+               RawSignal.Pulses[0]=46;              // signal the plugin number that should process this packet
+               return false;                        // Conversion done, stop plugin 1 and continue with regular plugins
             }
          }
          offset=4;
-         if (RawSignal.Pulses[pos1+offset]*RawSignal.Multiply > 3300) {
-            if (RawSignal.Pulses[pos2+offset]*RawSignal.Multiply > 3300 && RawSignal.Pulses[pos3+offset]*RawSignal.Multiply > 3300) {
+         if (RawSignal.Pulses[offset]*RawSignal.Multiply > 3300) {
+            if (RawSignal.Pulses[pos1+offset]*RawSignal.Multiply > 3300 && RawSignal.Pulses[pos2+offset]*RawSignal.Multiply > 3300) {
                for (i=0;i<74;i++){
-                   RawSignal.Pulses[1+i]=RawSignal.Pulses[pos1+i+offset]; // new filling of the pulses
+                   RawSignal.Pulses[1+i]=RawSignal.Pulses[offset+i+1]; // reorder pulse array
                }
-               RawSignal.Number=74;
-               break;
+               RawSignal.Number=74;                 // New packet length
+               RawSignal.Pulses[0]=46;              // signal the plugin number that should process this packet
+               return false;                        // Conversion done, stop plugin 1 and continue with regular plugins
             }
          }
       }
@@ -185,50 +187,33 @@ boolean Plugin_001(byte function, struct NodoEventStruct *event, char *string)
       // End of Signal Translation
       // ==========================================================================      
       // ==========================================================================
-      // Beginning of Signal translation for Byron & Lidl Doorbells
+      // Beginning of Signal translation for Byron Doorbell
       // ==========================================================================
       if (RawSignal.Number == 511) {
-         for (j=2;j<RawSignal.Number;j++) {
+         for (j=2;j<90 /*RawSignal.Number*/;j++) {  // Only check twice the total RF packet length we are looking for
+             // Byron SX
              if (RawSignal.Pulses[j]*RawSignal.Multiply > 2500) {  // input is going to fast skip to where new part is going to start
                 if (j+26 > 511) break; 
-                if (RawSignal.Pulses[j+26]*RawSignal.Multiply > 2500) { // first long delay found, make sure we have another at the right position               
-                    int pos1=j+1;
+                if ( (RawSignal.Pulses[j+26]*RawSignal.Multiply > 2500) && (RawSignal.Pulses[j+26]*RawSignal.Multiply < 3000) && (RawSignal.Pulses[j+26+26]*RawSignal.Multiply > 2500) ) { // first long delay found, make sure we have another at the right position               
                     for (i=0;i<26;i++){
-                        RawSignal.Pulses[1+i]=RawSignal.Pulses[pos1+i]; // new filling of the pulses
+                        RawSignal.Pulses[1+i]=RawSignal.Pulses[j+1+i]; // reorder pulse array
                     }
-                    RawSignal.Number=26;
+                    RawSignal.Number=26;            // New packet length
+                    RawSignal.Pulses[0]=72;         // signal the plugin number that should process this packet
+                    return false;                   // Conversion done, stop plugin 1 and continue with regular plugins
                 }
-                break;
-             } else 
-             if (RawSignal.Pulses[j]*RawSignal.Multiply > 1750) {  // input is going to fast skip to where new part is going to start
-                if (j+81 > 511) break;
-                if (RawSignal.Pulses[j+1]*RawSignal.Multiply > 1000 && RawSignal.Pulses[j+2]*RawSignal.Multiply > 1000 &&
-                    RawSignal.Pulses[j+3]*RawSignal.Multiply > 1000 && RawSignal.Pulses[j+4]*RawSignal.Multiply > 1000 && 
-                    RawSignal.Pulses[j+5]*RawSignal.Multiply > 1000 && RawSignal.Pulses[j+6]*RawSignal.Multiply > 1000 &&
-                    RawSignal.Pulses[j+7]*RawSignal.Multiply > 1000 && RawSignal.Pulses[j+8]*RawSignal.Multiply > 1000 ) {  //input is going to fast skip to where new part is going to start
-
-                    int pos1=j;
-                    for (i=0;i<90;i++){
-                        RawSignal.Pulses[1+i]=RawSignal.Pulses[pos1+1+i]; // new filling of the pulses
-                    }
-                    RawSignal.Number=90;
-                    break;
-                }  
-             }
+             } 
          }
       } 
       // ==========================================================================
       // End of Signal translation
       // ==========================================================================      
-      if (RawSignal.Number > 290) {   // unknown and unsupported long packet (284 is the max. pulse length used at the cresta/tfa plugin)
-         RawSignal.Number=0;          // no need to show this to any of the plugins for processing 
-         success=true;                // set to abort
-      }                               // as there is no support for it anyway 
-      break;
+      if (RawSignal.Number > 290) {                 // unknown and unsupported long packet (284 is the max. pulse length used at the cresta/tfa plugin)
+         RawSignal.Number=0;                        // no need to show this to any of the plugins for processing 
+         return true;                               // abort processing
+      }                                             // as there is no support for it anyway 
       }
     #endif //PLUGIN_CORE_001
     }      
-  return success;
+  return false;
 }
-
-

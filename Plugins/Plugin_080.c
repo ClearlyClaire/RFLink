@@ -6,10 +6,7 @@
  * Dit protocol zorgt voor ontvangst van Flamingo FA20RF rookmelder
  * 
  * Author             : StuntTeam
- * Support            : www.nodo-domotica.nl
- * Date               : 17-11-2014
- * Version            : 1.0
- * Compatibility      : RFLink 1.0
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  *********************************************************************************************
@@ -21,6 +18,15 @@
  * Daardoor kunnen ze onderling worden gekoppeld.
  * Na het koppelen hebben ze dus allemaal hetzelfde ID!
  * Je gebruikt 1 unit als master, waarvan je de code aanleert aan de andere units (slaves)
+ *
+ * Sample:
+ * 20;32;DEBUG;Pulses=52;Pulses(uSec)=2500,800,650,1250,650,1250,650,1250,650,1250,650,1250,650,1275,650,1250,650,2550,650,1275,650,2550,650,1250,650,1250,650,2550,650,2550,650,1275,650,2550,
+ 650,2550,650,1275,650,2550,650,2550,650,1275,650,1275,650,2550,650,1200,650;
+ 000000010100110110110010 = 014DB2
+ * 20;0C;DEBUG;Pulses=52;Pulses(uSec)=2500,825,625,2575,625,1275,625,1300,625,2575,625,1275,625,2575,625,2575,625,2575,625,2575,625,2575,625,2575,625,1275,625,1275,625,1275,625,2575,625,2575,
+ 625,2575,625,1275,625,2575,625,2575,625,1300,625,1275,625,2575,625,1225,625;
+ 100101111110001110110010 = 97E3B2
+ * 20;0D;FA20RF;ID=e3b2;SMOKEALERT=ON;
  \*********************************************************************************************/
 #define PLUGIN_ID 80
 #define PLUGIN_NAME "SmokeAlert"

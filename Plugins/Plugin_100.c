@@ -7,11 +7,10 @@
 /*********************************************************************************************\
  * Dit protocol zorgt voor ontvangst van Alecto weerstation buitensensoren
  * 
- * Auteur             : Nodo-team (Martinus van den Broek) www.nodo-domotica.nl
- *                      Support ACH2010 en code optimalisatie door forumlid: Arendst
- * Support            : www.nodo-domotica.nl
- * Datum              : 25 Jan 2013
- * Versie             : 1.3
+ * Author             : Martinus van den Broek
+ * Support            : http://sourceforge.net/projects/rflink/
+ * License            : This code is free for use in any open source project when this header is included.
+ *                      Usage of any parts of this code in a commercial application is prohibited!
  *********************************************************************************************
  * Technische informatie:
  * DKW2012 Message Format: (11 Bytes, 88 bits):

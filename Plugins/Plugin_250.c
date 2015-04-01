@@ -18,11 +18,8 @@
 * Je hoeft niets te doen met deze plugin, gewoon mee compileren
 * Uiteraard wel er voor zorgen dat de Nodo Slaves de correcte variable nummers gebruiken voor het type sensor dat je hebt
 *
-* Author             : R. ten Klooster http://weblog.tenklooster.net  
-* Support            : www.nodo-domotica.nl
-* Date               : 9-02-2015
-* Version            : 1.0
-* Compatibility      : RFLink 1.0
+* Author             : R. ten Klooster
+* Support            : http://sourceforge.net/projects/rflink/
 * License            : This code is free for use in any open source project when this header is included.
 *                      Usage of any parts of this code in a commercial application is prohibited!
 *********************************************************************************************

@@ -6,10 +6,7 @@
  * This protocol provides support for some Alarm sensors that are part of a Varel alarm
  * 
  * Author             : StuntTeam
- * Support            : www.nodo-domotica.nl
- * Date               : 9-02-2015
- * Version            : 1.0
- * Compatibility      : RFLink 1.0
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  *********************************************************************************************

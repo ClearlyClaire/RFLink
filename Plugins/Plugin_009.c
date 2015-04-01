@@ -5,9 +5,8 @@
 /*********************************************************************************************\
  * This plugin takes care of sending and receiving the X10 RF protocol. 
  * 
- * Auteur             : Voyager
- * Support            : www.nodo-domotica.nl
- * Versie             : 18-01-2015, Versie 1.0
+ * Author             : StuntTeam
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  ***********************************************************************************************

@@ -5,10 +5,8 @@
 /*********************************************************************************************\
  * This protocol provides support for some chinese Alarm "gadgets"
  * 
- * Author             : Martinus van den Broek
- * Support            : geen
- * Date               : 28 Okt 2013
- * Versie             : 0.1
+ * Author             : StuntTeam
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  *********************************************************************************************

@@ -8,11 +8,8 @@
  *
  * LET OP: GEEN SUPPORT VOOR DIRECTE DIMWAARDES!!!
  *
- * Auteur             : StuntTeam
- * Support            : www.nodo-domotica.nl
- * Datum              : 25 Mrt 2013
- * Versie             : 1.3
- * Syntax             : "HomeEasy <Adres>,<On|Off>
+ * Author             : StuntTeam
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  *********************************************************************************************

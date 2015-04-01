@@ -9,10 +9,7 @@
  * WT260,WT260H,WT440H,WT450,WT450H,WDS500,RG700
  *
  * Author             : StuntTeam
- * Support            : www.nodo-domotica.nl
- * Date               : 17-11-2014
- * Version            : 1.0
- * Compatibility      : RFLink 1.0
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  *********************************************************************************************

@@ -9,10 +9,7 @@
  * WS7000-15: Anemometer, WS7000-16: Rain precipitation, WS2500-19: Brightness Luxmeter, WS7000-20: Thermo/Humidity/Barometer
  *
  * Author             : StuntTeam
- * Support            : www.nodo-domotica.nl
- * Date               : 17-11-2014
- * Version            : 1.0
- * Compatibility      : RFLink 1.0
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  *********************************************************************************************

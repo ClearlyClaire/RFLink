@@ -7,9 +7,8 @@
  * working according to the learning code system. This protocol is also used by the Home Easy devices.
  * It includes direct DIM functionality.
  * 
- * Auteur             : StuntTeam
- * Support            : www.nodo-domotica.nl
- * Versie             : 18-01-2015, Versie 1.0
+ * Author             : StuntTeam
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  ***********************************************************************************************

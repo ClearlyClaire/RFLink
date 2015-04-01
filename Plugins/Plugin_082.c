@@ -6,10 +6,10 @@
  * This Plugin takes care of reception of Mertik Maxitrol / DRU for fireplaces
  * PCB markings: G6R H4T1.
  *
- * Auteur             : Maurice Ruiter (Dodge)
- * Support            : www.nodo-domotica.nl
- * Datum              : 3-3-2015
- * Versie             : 1.0 
+ * Author             : StuntTeam
+ * Support            : http://sourceforge.net/projects/rflink/
+ * License            : This code is free for use in any open source project when this header is included.
+ *                      Usage of any parts of this code in a commercial application is prohibited!
  *********************************************************************************************
  * Changelog: v1.0 initial release
  *********************************************************************************************

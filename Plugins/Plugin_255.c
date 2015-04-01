@@ -9,10 +9,9 @@
 * <Write a description here describing how the plugin works> 
 *
 * Author             : <name and email of the developer>
-* Date               : <date>
-* Version            : <version>
-* Syntax             : "MyPlugin <Par1>, <Par2>"
-*
+* Support            : http://sourceforge.net/projects/rflink/
+* License            : This code is free for use in any open source project when this header is included.
+*                      Usage of any parts of this code in a commercial application is prohibited!
 ***********************************************************************************************
 * Technical description:
 *

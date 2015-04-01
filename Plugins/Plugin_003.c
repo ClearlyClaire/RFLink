@@ -6,9 +6,8 @@
  * This plugin takes care of sending and receiving the Elro Flamingo FA500 protocol. 
  * Also works with compatible devices like the Mumbi M-FS300 and Silvercrest 91210/60494 RCS AAA3680, Unitec eim 821/art.48111
  * 
- * Auteur             : StuntTeam
- * Support            : www.nodo-domotica.nl
- * Versie             : 18-01-2015, Versie 1.0
+ * Author             : StuntTeam
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  ***********************************************************************************************

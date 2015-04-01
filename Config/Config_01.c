@@ -1,8 +1,8 @@
 // ****************************************************************************************************************************************
-// Definities voor Nodo units : CONFIG.C
+// RFLink List of Plugins
 // ****************************************************************************************************************************************
 // Here are all plugins listed that are supported and used after compilation.
-// When needed additional plugins can be added or selected plugins can be disabled.
+// When needed additional plugins can be added or selected plugins can be enabled/disabled.
 // ****************************************************************************************************************************************
 #define UNIT_NODO        1 // Nodo unit number after sending a [Reset] command
 #define CLOCK         true // true = include code for Real Time Clock into the compilation.
@@ -10,8 +10,8 @@
 
 // Translation Plugin for oversized packets due to their breaks/pause being too short between packets
 // Used for Flamingo FA500R and various others, do NOT exclude this plugin.
-#define PLUGIN_001
-#define PLUGIN_001_CORE
+#define PLUGIN_001         // DO NOT CHANGE
+#define PLUGIN_001_CORE    // DO NOT CHANGE 
 
 // ------------------------------------------------------------------------
 // -- Any of the following protocols can be excluded whenever not needed --
@@ -99,7 +99,7 @@
 #define PLUGIN_048_CORE
 
 // -------------------
-// PIR's
+// Motion Sensors, include when needed
 // -------------------
 // Ajax Chubb Varel 433 MHz. motion sensors
 //#define PLUGIN_060
@@ -123,10 +123,6 @@
 // Byron SX doorbell
 #define PLUGIN_072
 #define PLUGIN_072_CORE
-
-// Lidl doorbell
-//#define PLUGIN_073
-//#define PLUGIN_073_CORE
 
 // Byron MP001 doorbell
 //#define PLUGIN_074

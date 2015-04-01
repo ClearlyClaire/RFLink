@@ -6,8 +6,7 @@
  * This plugin takes care of decoding the Auriol protocol for sensor type Z31055A-TX and Xiron 
  * 
  * Author             : StuntTeam
- * Date               : 30-03-2015
- * Version            : 1.0
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  *********************************************************************************************
@@ -92,11 +91,15 @@ boolean Plugin_046(byte function, struct NodoEventStruct *event, char *string)
       // First perform sanity checks
       if (bitstream1==0) return false;
       if (bitstream2==0) return false;      
-      if ((bitstream2 & 0xF00) != 0xF00) return false; // check if 'E' hasw all 4 bits set
+      if ((bitstream2 & 0xF00) != 0xF00) return false; // check if 'E' has all 4 bits set
       if ((bitstream2 & 0xfff) != 0xF00) { 
-         type=1;
+         type=1;                                    // Xiron
+         if (RawSignal.Pulses[0] != PLUGIN_ID) {
+            Serial.println("Xiron ID error");                // Label
+            //return false; // only accept plugin1 translated Xiron packets
+         }
       } else {
-         type=0;
+         type=0;                                    // Auriol
          rc = (bitstream1 >> 12) & 0x07;            // get 3 bits, should always be 000
          if (rc != 0) return false; 
       }

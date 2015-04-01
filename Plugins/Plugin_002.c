@@ -9,9 +9,8 @@
  * code programmering. Dimmen wordt niet ondersteund. Coding/Encoding principe is in de markt bekend
  * onder de namen: Princeton PT2262 / MOSDESIGN M3EB / Domia Lite / Klik-Aan-Klik-Uit / Intertechno
  * 
- * Auteur             : StuntTeam
- * Support            : www.nodo-domotica.nl
- * Versie             : 22-12-2013, Versie 1.1, P.K.Tonkes: Plugin 001 en Plugin 002 samengevoegd
+ * Author             : StuntTeam
+ * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  ***********************************************************************************************

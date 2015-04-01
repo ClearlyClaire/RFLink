@@ -6,19 +6,12 @@
 * Funktionele beschrijving: Dit device makt dat de Nodo compatibel is voor ontvangst 
 *                           van UserEvents volgens het oude signaalformat van de Nodo Due.
 *
-* Auteur             : p.k.tonkes@gmail.com (Paul Tonkes))
-* Support            : www.nodo-domotica.nl
-* Datum              : 10-09-2013
-* Versie             : 1.0
-* Nodo productnummer : 
-* Compatibiliteit    : 573
-* Syntax             : n.v.t.
-*
+ * Author             : StuntTeam
+ * Support            : http://sourceforge.net/projects/rflink/
+ * License            : This code is free for use in any open source project when this header is included.
+ *                      Usage of any parts of this code in a commercial application is prohibited!
 ***********************************************************************************************
 * Technische beschrijving:
-*
-* Compiled size      :  848 bytes voor een Mega.
-*
 * Oude Nodo versies maakten gebruik van een 32-bit signaal. UserEvents werden eveneens in dit format
 * verzonden. Vanaf de 3.6 versie is gekozen voor een technisch geavanceerdere opbouw van RF en IR codes 
 * Consequentie hiervan is dat het oude formaat niet meer werd herkend door de Nodo. Dit device zorgt er
@@ -26,7 +19,6 @@
 * 
 * LET OP: In het oude format wordt geen gebruik gemaakt van het Home adres van
 *         een Nodo. Events komen ongeacht de home definitie altijd binnen.
-* 
 \*********************************************************************************************/
  
 #define PLUGIN_NAME "UserEvent"
