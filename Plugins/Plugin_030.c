@@ -149,7 +149,7 @@ boolean Plugin_030(byte function, struct NodoEventStruct *event, char *string)
         Serial.print( buffer );
         // ----------------------------------
         Serial.print("Alecto V1;");                      // Label
-        sprintf(buffer, "ID=%02x%02x;", (rc &0xfc), (rc &0x03) ); // ID split into rolling code and channel number
+        sprintf(buffer, "ID=%02x%02x;", (rc &0x03), (rc &0xfc)  ); // ID is split into channel number and rolling code 
         Serial.print( buffer );
         sprintf(buffer, "TEMP=%04x;", temperature);     
         Serial.print( buffer );

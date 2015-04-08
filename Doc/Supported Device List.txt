@@ -8,6 +8,7 @@ Klik Aan Klik Uit (Code Wheel)                      (Send + Receive)
  -  CoCo Technologies / Cogex / D-IO (Chacon) / Nexa / Düwi Terminal
     
 Klik Aan Klik Uit (Automatic Code Learning)         (Send + Receive)
+- KAKU / Anslut     
 Home Easy (Code Wheel)                              (Send + Receive)	
 Flamingo FA500R/S/DSS/WD (Automatic Code Learning)  (Send + Receive)
 -   SilverCrest 91210/60494 RCS AAA3680

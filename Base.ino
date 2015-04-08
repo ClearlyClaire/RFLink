@@ -1094,6 +1094,8 @@ void loop()
                // 10;KAKU;A1;ON; 
                if (strncmp (InputBuffer_Serial,"10;",3) == 0) {        // Command from Master to RFLink
                   // Cycle through command list to translate
+                  //Serial.print("20;"); 
+                  //Serial.println(InputBuffer_Serial); 
                   if (strncasecmp(InputBuffer_Serial+3,"KAKU;",5) == 0) { // KAKU Command eg. Kaku;A1;On
                      //10;Kaku;00004d;1;OFF                     
                      //012345678901234567890
@@ -1177,11 +1179,20 @@ void loop()
                      IncomingCommand=true;
                   } else
                   if (strncasecmp(InputBuffer_Serial+3,"HOMEEASY;",9) == 0) { // KAKU Command eg. 
-                     //HOMEEASY;12345678;ON;
-                     //45678901234567890123  
-                     InputBuffer_Serial[21]=',';
-                     strcpy(tempbuf,InputBuffer_Serial+13);
-                     sprintf(InputBuffer_Serial,"HomeEasySend 0x%s;", tempbuf);
+                     //10;HomeEasy;7900b200;b;ON;
+                     //01234567890123456789012345  
+                     strcpy(tempbuf,InputBuffer_Serial+23);
+                     unsigned long tempval=0L;
+                     byte tempbyte0=0;
+                     byte tempbyte1=0;
+                     byte tempbyte2=0;
+                     byte tempbyte3=0;
+                     tempval = (strtoul(InputBuffer_Serial+12, NULL, 16)) & 0xffffff;
+                     tempbyte0=((tempval>>24)&0xff);
+                     tempbyte1=((tempval>>16)&0xff);
+                     tempbyte2=((tempval>>8)&0xff);
+                     tempbyte3=(tempval&0xff);
+                     sprintf(InputBuffer_Serial,"HomeEasySend 0x%02x%02x%02x%02x,%s",tempbyte0,tempbyte1,tempbyte2,tempbyte3,tempbuf);
                      IncomingCommand=true;
                   } else   
                   if (strncasecmp(InputBuffer_Serial+3,"X10;",4) == 0) { // X10 Command eg. 
@@ -1217,8 +1228,8 @@ void loop()
                } else { // strncmp 10;
                   IncomingCommand=true;    // forward any Nodo command to the core to be processed
                }             
-               //Serial.print("BuffeR:"); 
-               ///Serial.println(InputBuffer_Serial); 
+               //Serial.print("Buffer:"); 
+               //Serial.println(InputBuffer_Serial); 
                // process command?                       
                if (IncomingCommand==true){
                  sprintf(tempbuf,"20;%02X;OK;",PKSequenceNumber++);

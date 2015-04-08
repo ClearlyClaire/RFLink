@@ -23,12 +23,13 @@
  *
  * ELRO HOMEEASY HE842
  * The HE842 remote control sends 3 different protocols.
- * 8 x Method 1 - 28 bit code (58 pulses)
- * 1 x method 2 - HE compatible (116 pulses) See Plugin 15 & 16.
+ * 8  x Method 1 - 28 bit code (58 pulses)
+ * 20 x Method 2 - 24 bit code (50 pulses)
+ * 6  x method 3 - HE compatible (116 pulses) See Plugin 15 & 16.
  * -------------------
  * ELRO FLAMINGO FA500
  * The FA500R remote control sends 3 different protocols.
- * 4 x Method 1 - 28 bit code (58 pulses)
+ * 4 x Method 1 - 28 bit code (58 pulses) - Same as HE842 Method 1
  * 6 x method 2 - AC compatible (130 pulses)
  * 5 x method 3 - 24/12 bit code (24 pulses)
  * It appears that the FA500S switch is only capable to react to the first method.

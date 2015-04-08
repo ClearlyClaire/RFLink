@@ -22,7 +22,7 @@ Packet structure - Send data via RF:
 
 10;Kaku;A1;ON;              => protocol;address;action (ON/OFF)
 10;NewKaku;00c142;1;ON;     => protocol;address;button number;action (ON/OFF/ALLON/ALLOFF/15 - 1 to 15 for direct dim level)
-10;HomeEasy;7900b100;ON;    => protocol;address;action (ON/OFF/ALLON/ALLOFF)
+10;HomeEasy;7900b100;3;ON;  => protocol;address;action (ON/OFF/ALLON/ALLOFF)
 10;SmokeAlert;1234;ON;      => protocol;address;action 
 10;FA500;12345678;ON;       => protocol;address;action (ON/OFF)
 10;Eurodomest;123456;01;ON; => protocol;address;button number;action (ON/OFF/ALLON/ALLOFF)
