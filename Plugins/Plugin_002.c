@@ -198,7 +198,8 @@ boolean Plugin_002(byte function, struct NodoEventStruct *event, char *string)
         RawSignal.Pulses[4*KAKU_CodeLength+1]=KAKU_T/RawSignal.Multiply;
         RawSignal.Pulses[4*KAKU_CodeLength+2]=KAKU_T/RawSignal.Multiply;
         }
-        SendEvent(event,true,true,Settings.WaitFree==VALUE_ON);
+        //SendEvent(event,true,true,Settings.WaitFree==VALUE_ON);
+        SendEvent(event,true,true,Settings.WaitFree==VALUE_OFF);     // priority to transmit        
         success=true;
         break;
       }

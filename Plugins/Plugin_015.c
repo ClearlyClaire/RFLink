@@ -202,7 +202,7 @@ boolean Plugin_015(byte function, struct NodoEventStruct *event, char *string)
     free(str);
     break;
     }
-
+/*
   case PLUGIN_MMI_OUT:
     {
     strcpy(string,PLUGIN_NAME);            // Eerste argument=het commando deel
@@ -225,6 +225,7 @@ boolean Plugin_015(byte function, struct NodoEventStruct *event, char *string)
 
     break;
     }
+    */
 #endif //NODO_MEGA
   }      
   return success;

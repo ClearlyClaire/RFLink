@@ -8,6 +8,8 @@ Klik Aan Klik Uit (Code Wheel)                      (Send + Receive)
  -  CoCo Technologies / Cogex / D-IO (Chacon) / Nexa / Düwi Terminal
     
 Klik Aan Klik Uit (Automatic Code Learning)         (Send + Receive)
+  (among others: AWMR210, AWMT230, AWMD250, AWST8800)
+
 - KAKU / Anslut     
 Home Easy (Code Wheel)                              (Send + Receive)	
 Flamingo FA500R/S/DSS/WD (Automatic Code Learning)  (Send + Receive)
@@ -63,10 +65,11 @@ Window blinds/shutters/sun screens:
 -----------------------------------
 Kaku ASUN650
 ============================================================================
-Motion Detectors & Door sensors:
+Motion Detectors & Door/Window sensors:
 --------------------------------
 Low Budget Chinese PIR
 Ajax Chub Varel PIR
+KAKU AMST-606 door/window sensor
 ============================================================================
 Fireplace:
 ----------

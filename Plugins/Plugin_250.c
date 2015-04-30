@@ -60,6 +60,7 @@ boolean Plugin_250(byte function, struct NodoEventStruct *event, char *string) {
          sprintf(buffer, "ID=%02x%02x;", event->Par1, event->SourceUnit); // ID    
          Serial.print( buffer );
          sprintf(buffer, "TEMP=%04x;", temperature);      // 2 byte value
+         Serial.print( buffer );
          Serial.println();
          //==================================================================================
          success=true;
@@ -98,6 +99,7 @@ boolean Plugin_250(byte function, struct NodoEventStruct *event, char *string) {
          sprintf(buffer, "ID=%02x%02x;", event->Par1, event->SourceUnit); // ID    
          Serial.print( buffer );
          sprintf(buffer, "UV=%04x;", light);              // 2 byte value
+         Serial.print( buffer );
          Serial.println();
          //==================================================================================
          success=true;
@@ -116,6 +118,7 @@ boolean Plugin_250(byte function, struct NodoEventStruct *event, char *string) {
          sprintf(buffer, "ID=%02x%02x;", event->Par1, event->SourceUnit); // ID    
          Serial.print( buffer );
          sprintf(buffer, "BARO=%04x;", baro);             // 2 byte value
+         Serial.print( buffer );
          Serial.println();
          //==================================================================================
          success=true;

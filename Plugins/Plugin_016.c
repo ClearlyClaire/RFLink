@@ -110,7 +110,8 @@ boolean Plugin_016(byte function, struct NodoEventStruct *event, char *string)
     event->Port=VALUE_ALL; // Signaal mag naar alle door de gebruiker met [Output] ingestelde poorten worden verzonden.
     RawSignal.Repeats=5;   // vijf herhalingen.
     RawSignal.Delay=20; // Tussen iedere pulsenreeks enige tijd rust.
-    SendEvent(event,true,true,Settings.WaitFree==VALUE_ON);
+    //SendEvent(event,true,true,Settings.WaitFree==VALUE_ON);
+    SendEvent(event,true,true,Settings.WaitFree==VALUE_OFF);     // priority to transmit    
     success=true;
     break;
     }
@@ -145,7 +146,7 @@ boolean Plugin_016(byte function, struct NodoEventStruct *event, char *string)
     free(str);
     break;
     }
-
+/*
   case PLUGIN_MMI_OUT:
     {
     strcpy(string,PLUGIN_NAME);            // Eerste argument=het commando deel
@@ -167,7 +168,7 @@ boolean Plugin_016(byte function, struct NodoEventStruct *event, char *string)
       strcat(string,int2str(event->Par1));
 
     break;
-    }
+    }*/
 #endif //NODO_MEGA
   }      
   return success;

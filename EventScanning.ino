@@ -155,7 +155,7 @@ boolean ScanEvent(struct NodoEventStruct *Event)                                
   Focus=0;
   return false;
   }
-
+/*
 #if NODO_MEGA
 #if CLOCK
 boolean ScanAlarm(struct NodoEventStruct *Event)
@@ -205,3 +205,5 @@ boolean ScanAlarm(struct NodoEventStruct *Event)
  }
 #endif clock
 #endif
+*/
+

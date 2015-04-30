@@ -943,12 +943,12 @@ byte PluginCall(byte Function, struct NodoEventStruct *Event, char *str)
 
     // alleen plugin aanroepen zoals opgegeven in Event->Command. Keer terug zonder message
     case PLUGIN_MMI_OUT:
-      for(x=0; x<PLUGIN_MAX; x++)
-        if(Plugin_id[x]==Event->Command)
-          {
-          Plugin_ptr[x](Function,Event,str);
+      //for(x=0; x<PLUGIN_MAX; x++)
+      //  if(Plugin_id[x]==Event->Command)
+      //    {
+      //    Plugin_ptr[x](Function,Event,str);
           return true; // Plugin gevonden
-          }
+      //    }
 
       break;
     }// case

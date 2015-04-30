@@ -184,11 +184,6 @@ boolean Plugin_082(byte function, struct NodoEventStruct *event, char *string)
     char *TempStr=(char*)malloc(INPUT_COMMAND_SIZE);
 
     if (GetArgv(string,TempStr,1)) {
-       if (strcasecmp(TempStr,PLUGIN_082_EVENT)==0) {
-          event->Type = NODO_TYPE_PLUGIN_EVENT;
-          event->Command = 82; // Plugin nummer
-          success=true;
-       }
        if (strcasecmp(TempStr,PLUGIN_082_COMMAND)==0) {
           event->Type = NODO_TYPE_PLUGIN_COMMAND;
           event->Command = 82; // Plugin nummer
@@ -207,26 +202,6 @@ boolean Plugin_082(byte function, struct NodoEventStruct *event, char *string)
     }
     free(TempStr);
     break;
-    }
-
-  case PLUGIN_MMI_OUT:
-    {
-    if (event->Type==NODO_TYPE_PLUGIN_COMMAND)
-       strcpy(string,PLUGIN_082_COMMAND);           // Command
-       strcat(string," ");
-       strcat(string,int2str(event->Par1));
-       strcat(string,",");
-       if (event->Par2==1) strcat(string,"Up");
-       else if (event->Par2==2) strcat(string,"Down");
-       else if (event->Par2==3) strcat(string,"Off");
-       else if (event->Par2==4) strcat(string,"On");
-       else if (event->Par2==5) strcat(string,"Stop");
-       else if (event->Par2==6) strcat(string,"Go Up");
-       else if (event->Par2==7) strcat(string,"Go Down");
-       else {
-           return false;
-       }
-       break;
     }
 #endif //NODO_MEGA
   }      

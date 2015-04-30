@@ -96,23 +96,6 @@ int ExecuteLine(char *Line, byte Port)
 
           switch(x)
             {
-            case CMD_FILE_EXECUTE:
-              if(EventToExecute.Par2==VALUE_ON)
-                EventToExecute.Par1=VALUE_ON;
-              else
-                EventToExecute.Par1=VALUE_OFF;
-                
-              if(GetArgv(Command,TmpStr1,2))
-                EventToExecute.Par2=str2int(TmpStr1);
-
-              if(EventToExecute.Par2==0)
-                  error=FileExecute("",TmpStr1,"DAT", EventToExecute.Par1==VALUE_ON, VALUE_ALL);
-              else
-                {
-                EventToExecute.Type=NODO_TYPE_COMMAND;
-                EventToExecute.Command=CMD_FILE_EXECUTE;
-                }
-              break;                                                                             
         
             case CMD_SENDTO:
               QueuePosition=0;                                                  //We gebruiken de Queue voor verwerking van de commando's die middels SendTo naar de Slave moeten  
@@ -139,62 +122,7 @@ int ExecuteLine(char *Line, byte Port)
                 }
               EventToExecute.Command=0;      
               break;    
-        
-            case CMD_EVENTLIST_WRITE:
-              EventToExecute.Type=NODO_TYPE_COMMAND;
-              EventToExecute.Command=CMD_EVENTLIST_WRITE;      
-              if(Transmission_SendToUnit==Settings.Unit || Transmission_SendToUnit==0)// Als geen SendTo actief
-                {                          
-                if(EventToExecute.Par1<=EventlistMax)
-                  {
-                  EventlistWriteLine=EventToExecute.Par1;
-                  State_EventlistWrite=1;
-                  }
-                else
-                  error=MESSAGE_INVALID_PARAMETER;
-                }
-              else
-                {
-                // Het EventlistWrite commando moet naar de Slave worden verzonden. In dit geval maken we er een systeem commando
-                // van omdat deze bijzondere behandeling aan de slave zijde nodig heeft.
-                EventToExecute.Command=SYSTEM_COMMAND_QUEUE_EVENTLIST_WRITE;
-                EventToExecute.Type=NODO_TYPE_SYSTEM;
-                QueueAdd(&EventToExecute);
-                }
-              
-              EventToExecute.Command=0;      
-              break;
-        
-            case CMD_PASSWORD:
-              {
-              EventToExecute.Type=NODO_TYPE_COMMAND;
-              TmpStr1[0]=0;
-              GetArgv(Command,TmpStr1,2);
-              TmpStr1[25]=0;                                                    // voor geval de string te lang is.
-              strcpy(Settings.Password,TmpStr1);
-        
-              if(Settings.Lock)                                                 // Als een lock actief, dan lock op basis van nieuwe password instellen
-                {
-                Settings.Lock=0L;
-                for(x=0;x<strlen(Settings.Password);x++)
-                  {
-                  Settings.Lock=Settings.Lock<<5;
-                  Settings.Lock^=Settings.Password[x];
-                  }
-                }
-              break;
-              }  
-        
-            case CMD_ID:
-              {
-              EventToExecute.Type=NODO_TYPE_COMMAND;
-              TmpStr1[0]=0;
-              GetArgv(Command,TmpStr1,2);
-              TmpStr1[9]=0;                                                     // voor geval de string te lang is.
-              strcpy(Settings.ID,TmpStr1);
-              break;
-              }  
-        
+/*
             case CMD_TEMP:
               {
               EventToExecute.Type=NODO_TYPE_COMMAND;
@@ -205,12 +133,7 @@ int ExecuteLine(char *Line, byte Port)
               strcpy(Settings.Temp,TmpStr1);
               break;
               }  
-            
-            case CMD_FILE_ERASE:      
-              if(GetArgv(Command,TmpStr1,2))
-                FileErase("",TmpStr1,"DAT");
-              break;
-        
+*/            
             case CMD_RAWSIGNAL_DELAY:
               RawSignal.Delay=EventToExecute.Par1;
               break;
@@ -234,18 +157,7 @@ int ExecuteLine(char *Line, byte Port)
               error=RawSignalPulses(Line+x);
               LinePos=LineLength+1;                                             // ga direct naar einde van de regel.
               break;
-            
-            case CMD_RAWSIGNAL_ERASE:      
-              if(GetArgv(Command,TmpStr1,2))
-                {
-                if(TmpStr1[0]!='*')
-                  x=2;
-                else
-                  x=0;
-                FileErase(ProgmemString(Text_08),TmpStr1+x,"DAT");              // +2 om zo de "0x" van de string te strippen.
-                }
-              break;
-                  
+/*            
             #ifdef ethernetserver_h
             case CMD_FILE_GET_HTTP:
               EventToExecute.Type=NODO_TYPE_COMMAND;
@@ -258,16 +170,6 @@ int ExecuteLine(char *Line, byte Port)
                 error=MESSAGE_INVALID_PARAMETER;            
               break;
             #endif 
-              
-            case CMD_FILE_SHOW:
-              EventToExecute.Type=NODO_TYPE_COMMAND;
-              if(GetArgv(Command,TmpStr1,2))
-                {
-                PrintString(ProgmemString(Text_22), Port);
-                error=FileShow("",TmpStr1,"DAT",Port);
-                PrintString(ProgmemString(Text_22), Port);
-                }
-              break;
                         
             case CMD_NODO_IP:
               EventToExecute.Type=NODO_TYPE_COMMAND;
@@ -304,109 +206,8 @@ int ExecuteLine(char *Line, byte Port)
                   error=MESSAGE_INVALID_PARAMETER;
               break;
               
-            case CMD_EVENTLIST_FILE:
-              EventToExecute.Type=NODO_TYPE_COMMAND;
-              if(GetArgv(Command,TmpStr1,2))
-                {
-                if(!SaveEventlistSDCard("",TmpStr1,"DAT"))
-                  {
-                  error=MESSAGE_SDCARD_ERROR;
-                  break;
-                  }
-                }
-              break;
-        
-            case CMD_IF:
-              EventToExecute.Type=NODO_TYPE_COMMAND;
-              x=StringFind(Command," ") ;                                       // laat x wijzen direct NA het if commando.
-              strcpy(TmpStr1,Command+x);                                        // Alles na de "if" hoort bij de voorwaarde
-        
-              // eventuele spaties er uithalen
-              y=0;
-              for(x=0;x<strlen(TmpStr1);x++)
-                {
-                if(TmpStr1[x]!=' ')
-                  TmpStr1[y++]=TmpStr1[x];
-                }
-              TmpStr1[y]=0;
-              
-              // Zoek '=' teken op en splitst naar linker en rechter operand.
-              x=StringFind(TmpStr1,"<>");
-              if(x!=-1)
-                {
-                strcpy(TmpStr2,TmpStr1+x+2);
-                TmpStr1[x]=0;
-                if(strcasecmp(TmpStr1,TmpStr2)==0)
-                  LinePos=LineLength+1; // ga direct naar einde van de regel.
-                }
-                
-              x=StringFind(TmpStr1,"=");
-              if(x!=-1)
-                {
-                strcpy(TmpStr2,TmpStr1+x+1);
-                TmpStr1[x]=0;
-                if(strcasecmp(TmpStr1,TmpStr2)!=0)
-                  LinePos=LineLength+1; // ga direct naar einde van de regel.
-                }
-              else
-                error=MESSAGE_INVALID_PARAMETER;
-              break;
-        
             case CMD_RAWSIGNAL_LIST:
               FileList(ProgmemString(Text_08),Port);
-              break;
-        
-            case CMD_FILE_LIST:
-              FileList("",Port);
-              break;
-        
-            case CMD_FILE_WRITE:
-              if(GetArgv(Command,TmpStr1,2) && strlen(TmpStr1)<=8)
-                {
-                PrintString(ProgmemString(Text_22),Port);
-                TmpStr1[8]=0;//voor de zekerheid een te lange string afkappen
-                strcpy(TempLogFile,TmpStr1);
-                FileWriteMode=120;
-                }
-              else
-                error=MESSAGE_INVALID_PARAMETER;
-              break;
-            
-            case CMD_FILE_WRITE_LINE:
-              if(GetArgv(Command,TmpStr1,2) && strlen(TmpStr1)<=8)
-                {
-                if(Substitute(Line)!=0)
-                  error=MESSAGE_INVALID_PARAMETER;
-
-                x=StringFind(Line,TmpStr1)+strlen(TmpStr1);
-                while(Line[x]==32 || Line[x]==' ;')x++;
-
-
-                FileWriteLine("",TmpStr1, "DAT", Line+x, false);
-                LinePos=LineLength+1; // ga direct naar einde van de regel.
-                }
-              else
-                error=MESSAGE_INVALID_PARAMETER;
-              break;
-        
-            case CMD_ALIAS_WRITE:
-              x=StringFind(Line,cmd2str(CMD_ALIAS_WRITE))+strlen(cmd2str(CMD_ALIAS_WRITE));
-              while(Command[x]==' ')x++;             // eventuele spaties verwijderen
-              error=AliasWrite(Line+x);
-              break;
-        
-            case CMD_ALIAS_LIST:
-              x=StringFind(Line,cmd2str(CMD_ALIAS_LIST))+strlen(cmd2str(CMD_ALIAS_LIST));
-              while(Command[x]==' ')x++;             // eventuele spaties verwijderen
-              PrintString(ProgmemString(Text_22), Port);
-              AliasList(Line+x, Port);
-              PrintString(ProgmemString(Text_22), Port);
-              break;
-        
-            case CMD_ALIAS_ERASE:
-              x=StringFind(Line,cmd2str(CMD_ALIAS_ERASE))+strlen(cmd2str(CMD_ALIAS_ERASE));
-              while(Command[x]==' ')x++;             // eventuele spaties verwijderen
-              error=AliasErase(Line+x);
               break;
         
             case CMD_HTTP_REQUEST:
@@ -415,7 +216,7 @@ int ExecuteLine(char *Line, byte Port)
               while(Line[x]==32)x++;
               strcpy(Settings.HTTPRequest,&Line[0]+x);
               break;
-
+*/
             default:
               {                 
               // Ingevoerde commando is niet gevonden. 
@@ -474,7 +275,7 @@ int ExecuteLine(char *Line, byte Port)
               }
             continue;
             }
-    
+/*    
           if(State_EventlistWrite==2)
             {            
             UndoNewNodo();// Status NewNodo verwijderen indien van toepassing
@@ -492,7 +293,8 @@ int ExecuteLine(char *Line, byte Port)
             TempEvent=EventToExecute; // TempEvent = >Event< dat moet worden weggeschreven in de eventlist;
             State_EventlistWrite=2;
             }
-          }
+*/            
+          }          
         }// if(LineChar.
 
       // Tekens toevoegen aan commando zolang er nog ruimte is in de string
@@ -500,7 +302,7 @@ int ExecuteLine(char *Line, byte Port)
         Command[CommandPos++]=LineChar;      
       LinePos++;
       }// while(LinePos...
-  
+/*  
     // Verzend de inhoud van de queue naar de slave Nodo
     if(Transmission_SendToUnit!=Settings.Unit && Transmission_SendToUnit!=0 && error==0 && QueuePosition>0)
       {
@@ -511,6 +313,7 @@ int ExecuteLine(char *Line, byte Port)
         LinePos=0;
         }
       }
+*/      
     }// einde regel behandeling
 
   free(TmpStr2);
@@ -593,7 +396,7 @@ void PrintEvent(struct NodoEventStruct *Event, byte Port)
   // WEERGEVEN OP TERMINAL
   PrintString(StringToPrint,Port);   // stuur de regel naar Serial en/of naar Ethernet
 
-  // LOG OP SDCARD
+/*  // LOG OP SDCARD
   if(bitRead(HW_Config,HW_SDCARD) && Settings.Log==VALUE_ON) 
     {
     TmpStr[0]='!';
@@ -612,7 +415,7 @@ void PrintEvent(struct NodoEventStruct *Event, byte Port)
     strcat(TmpStr,StringToPrint);
     FileWriteLine("",ProgmemString(Text_23),"DAT", TmpStr, false);
     }
-
+*/
   free(TmpStr);
   free(StringToPrint);
   } 
@@ -774,7 +577,7 @@ void Event2str(struct NodoEventStruct *Event, char* EventString)
   if(Event->Type == NODO_TYPE_PLUGIN_COMMAND || Event->Type == NODO_TYPE_PLUGIN_EVENT)
     {
     strcpy(EventString,"?");
-    PluginCall(PLUGIN_MMI_OUT, Event,EventString);
+    //PluginCall(PLUGIN_MMI_OUT, Event,EventString);
     }
     
   if(EventString[0]==0)
@@ -787,7 +590,7 @@ void Event2str(struct NodoEventStruct *Event, char* EventString)
         ParameterToView[0]=PAR2_TIME;         // tijd
         ParameterToView[1]=PAR2_WDAY;         // dag van de week of een wildcard
         break;
-
+/*
       case CMD_ALARM_SET:
         ParameterToView[0]=PAR1_INT;          // Alarmnummer
         ParameterToView[1]=PAR2_ALARMENABLED; // On / Off en de tijd
@@ -817,7 +620,7 @@ void Event2str(struct NodoEventStruct *Event, char* EventString)
         ParameterToView[0]=PAR1_INT;
         ParameterToView[1]=PAR2_FLOAT;
         break;
-
+*/
       // Par2 als hex waarde, par2 als tekst.
       case CMD_RAWSIGNAL_SHOW:
       case CMD_RAWSIGNAL_SEND:
@@ -1671,16 +1474,7 @@ boolean Str2Event(char *Command, struct NodoEventStruct *ResultEvent)
 
 void PrintWelcome(void)
   {
-  // Print Welkomsttekst
-  //Serial.println(F("!******************************************************************************!"));
-  //Serial.println(F("Nodo Domotica controller (c) Copyright 2014 P.K.Tonkes."));
-  //Serial.println(F("Licensed under GNU General Public License."));
-  //Serial.print(F("Nodo-Small V3.7, Product=SWACNC-SMALL-R"));
-  //Serial.print(NODO_BUILD);
-  //Serial.print(F(", ThisUnit="));
-  //Serial.println(Settings.Unit);
-  //Serial.println(F("!******************************************************************************!"));
   }
 
 #endif
-  
+

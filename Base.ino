@@ -950,7 +950,6 @@ void setup()
   #endif
   
 //  PrintWelcome();                                                               // geef de welkomsttekst weer
-
   
   ClearEvent(&TempEvent);
   TempEvent.Port      = VALUE_ALL;
@@ -1094,8 +1093,8 @@ void loop()
                // 10;KAKU;A1;ON; 
                if (strncmp (InputBuffer_Serial,"10;",3) == 0) {        // Command from Master to RFLink
                   // Cycle through command list to translate
-                  //Serial.print("20;"); 
-                  //Serial.println(InputBuffer_Serial); 
+                  Serial.print("20;incoming;"); 
+                  Serial.println(InputBuffer_Serial); 
                   if (strncasecmp(InputBuffer_Serial+3,"KAKU;",5) == 0) { // KAKU Command eg. Kaku;A1;On
                      //10;Kaku;00004d;1;OFF                     
                      //012345678901234567890
@@ -1232,9 +1231,11 @@ void loop()
                //Serial.println(InputBuffer_Serial); 
                // process command?                       
                if (IncomingCommand==true){
+                 RaiseMessage(ExecuteLine(InputBuffer_Serial,VALUE_SOURCE_SERIAL),0);
+                 
                  sprintf(tempbuf,"20;%02X;OK;",PKSequenceNumber++);
                  Serial.println(tempbuf); 
-                 RaiseMessage(ExecuteLine(InputBuffer_Serial,VALUE_SOURCE_SERIAL),0);
+                 //RaiseMessage(ExecuteLine(InputBuffer_Serial,VALUE_SOURCE_SERIAL),0);
                }
             }
             //Serial.write('>');                                                  // Prompt
@@ -1303,7 +1304,7 @@ void loop()
                 TerminalLocked=0;
                 y=bitRead(HW_Config,HW_SERIAL);
                 bitWrite(HW_Config,HW_SERIAL,0);
-                PrintWelcome();
+//                PrintWelcome();
                 bitWrite(HW_Config,HW_SERIAL,y);
                 }                
               }
@@ -1353,7 +1354,7 @@ void loop()
                       TerminalLocked=0;
                       y=bitRead(HW_Config,HW_SERIAL);
                       bitWrite(HW_Config,HW_SERIAL,0);
-                      PrintWelcome();
+//                      PrintWelcome();
                       bitWrite(HW_Config,HW_SERIAL,y);
                       }
                     else                                                        // als foutief wachtwoord, dan teller 
@@ -1441,9 +1442,9 @@ void loop()
       LoopIntervalTimer=millis()+SCAN_LOW_TIME; // reset de timer  
 
       // PLUGIN: **************** Loop iedere seconde de plugins langs voor onderhoudstaken ***********************
-      PluginCall(PLUGIN_ONCE_A_SECOND,&ReceivedEvent,0);
+//      PluginCall(PLUGIN_ONCE_A_SECOND,&ReceivedEvent,0);
 
-
+/*
       // TIMER: **************** Genereer event als Ã©Ã©n van de Timers voor de gebruiker afgelopen is ***********************    
       for(x=0;x<TIMER_MAX;x++)
         {
@@ -1463,7 +1464,8 @@ void loop()
             }
           }
         }
-
+*/
+/*
       // CLOCK: **************** Lees periodiek de realtime klok uit en check op events  ***********************
       #if CLOCK
       if(bitRead(HW_Config,HW_CLOCK))
@@ -1511,7 +1513,6 @@ void loop()
         }
       #endif CLOCK 
     
-
       // Terminal onderhoudstaken
       // tel seconden terug nadat de gebruiker gedefinieerd maal foutief wachtwoord ingegeven
       #ifdef ethernetserver_h
@@ -1544,7 +1545,6 @@ void loop()
         }
       #endif // ethernetserver_h
 
-
       // Timer voor blokkeren verwerking. teller verlagen
       #if NODO_MEGA
       if(FileWriteMode>0)
@@ -1554,6 +1554,7 @@ void loop()
           TempLogFile[0]=0;
         }
       #endif //Mega
+*/      
       }
     }// while 
   }

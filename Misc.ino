@@ -775,10 +775,10 @@ void Status(struct NodoEventStruct *Request)
   if(Request->Par2==VALUE_ALL)
     Request->Par2==0;
 
-  #if NODO_MEGA          
-  if(DisplayLocal && (Request->Par1==0 || Request->Par1==VALUE_ALL))
-    PrintWelcome();
-  #endif
+//  #if NODO_MEGA          
+//  if(DisplayLocal && (Request->Par1==0 || Request->Par1==VALUE_ALL))
+//    PrintWelcome();
+//  #endif
 
   if(Request->Par1==VALUE_ALL)
     {

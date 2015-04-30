@@ -223,22 +223,6 @@ boolean Plugin_255(byte function, struct NodoEventStruct *event, char *string)
       free(TempStr);
       break;
       }
-
-    case PLUGIN_MMI_OUT:
-      {
-      // The code here turns an event with a unique ID in the struct [event] into a readable event for the user.
-      // The result has to be placed in the string [string] 
-      // Note that the total command length is not more than 25 characters.
-      Serial.println(F("*** debug: MyPlugin: PLUGIN_MMI_OUT")); // Debug
-
-      strcpy(string,PLUGIN_NAME);                   // Command 
-      strcat(string," ");
-      strcat(string,int2str(event->Par1));          // Parameter-1 (8-bit)
-      strcat(string,",");
-      strcat(string,int2str(event->Par2));          // Parameter-2 (32-bit)
-
-      break;
-      }
     #endif //MMI
     }
     

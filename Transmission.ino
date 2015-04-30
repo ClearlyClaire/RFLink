@@ -30,7 +30,7 @@ boolean SendEvent(struct NodoEventStruct *ES, boolean UseRawSignal, boolean Disp
       }
     }  
   // PrintNodoEvent("DEBUG: SendEvent():", ES);
-
+  //Serial.println("20;10;SendEvent");
   // loop de plugins langs voor eventuele afhandeling van dit event.
   PluginCall(PLUGIN_EVENT_OUT, ES,0);
 
@@ -45,6 +45,16 @@ boolean SendEvent(struct NodoEventStruct *ES, boolean UseRawSignal, boolean Disp
 
   // Respecteer een minimale tijd tussen verzenden van events. Wachten alvorens event te verzenden.
   while(millis()<HoldTransmission);  
+
+  // Verstuur signaal als RF
+  if(Settings.TransmitRF==VALUE_ON && (Port==VALUE_SOURCE_RF || Port==VALUE_ALL))
+    {
+    ES->Port=VALUE_SOURCE_RF;
+    #if NODO_MEGA
+    if(Display)PrintEvent(ES,VALUE_ALL);
+    #endif
+    RawSendRF();
+    }
                                              
   // Verstuur signaal als IR
   if(Settings.TransmitIR==VALUE_ON && (Port==VALUE_SOURCE_IR || Port==VALUE_ALL))
@@ -87,16 +97,6 @@ boolean SendEvent(struct NodoEventStruct *ES, boolean UseRawSignal, boolean Disp
       }
     }
   #endif
-  
-  // Verstuur signaal als RF
-  if(Settings.TransmitRF==VALUE_ON && (Port==VALUE_SOURCE_RF || Port==VALUE_ALL))
-    {
-    ES->Port=VALUE_SOURCE_RF;
-    #if NODO_MEGA
-    if(Display)PrintEvent(ES,VALUE_ALL);
-    #endif
-    RawSendRF();
-    }
 
   HoldTransmission=DELAY_BETWEEN_TRANSMISSIONS+millis();        
   }

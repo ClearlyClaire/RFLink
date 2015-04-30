@@ -205,7 +205,7 @@ public:
     // -------------------------------------
 	virtual char decode(word width) {
 		if (200 <= width && width < 1200) {
-			byte w = width >= 700;
+			byte w = width >= 675;
 			switch (state) {
 			case UNKNOWN:
 				if (w != 0) {
@@ -273,7 +273,7 @@ public:
     // -------------------------------------
 	virtual char decode(word width) {
 		if (200 <= width && width < 1200) {
-			byte w = width >= 700;
+			byte w = width >= 675;
 			switch (state) {
 			case UNKNOWN:
 				if (w == 0)
@@ -418,14 +418,14 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
       // ==================================================================================
       // Protocol and device info:
       // ==================================================================================
-      //Serial.print("Oregon V");
-      //Serial.print(found);
-      //Serial.print(": ");
-      //for(byte x=0; x<13;x++) {
-      //    Serial.print( osdata[x],HEX ); 
-      //    Serial.print((" ")); 
-      //}
-      //Serial.println();  
+      Serial.print("Oregon V");
+      Serial.print(found);
+      Serial.print(": ");
+      for(byte x=0; x<13;x++) {
+          Serial.print( osdata[x],HEX ); 
+          Serial.print((" ")); 
+      }
+      Serial.println();  
       //Serial.print("Oregon ID="); 
       unsigned int id=(osdata[0]<<8)+ (osdata[1]);
       rc=osdata[0];
@@ -516,10 +516,10 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
       // OSV2 1A2D1072512080E73F2C[THGR228N,...] Id:72 ,Channel:1 ,temp:20.50 ,hum:78 ,bat:90
       // OSV2 1A2D103742197005378E // THGR228N
       // OSV3 FA28A428202290834B46 // 
+      // OSV3 FA2814A93022304443BE // THGR810
       // OSV2 1A2D1002 02060552A4C
       //      1A3D10D91C273083..
       //      1A3D10D90C284083..
-      // OSV3 FA2814A93022304443BE // THGR810
       //      01234567890123456789
       //      0 1 2 3 4 5 
       // F+A+2+8+1+4+A+9+3+0+2+2+3+0+4+4=4d-a=43 
@@ -537,13 +537,13 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         Serial.print( buffer );
         // ----------------------------------
         Serial.print("Oregon TempHygro;");               // Label
-        sprintf(buffer, "ID=%02x%02x;", osdata[1],osdata[2]);   // ID    
+        sprintf(buffer, "ID=%02x%02x;", osdata[1],osdata[3]);   // ID    
         Serial.print( buffer );
         sprintf(buffer, "TEMP=%04x;", temp);     
         Serial.print( buffer );
         sprintf(buffer, "HUM=%02x;", hum);     
         Serial.print( buffer );
-        if ((osdata[3] & 0x0F) >= 4) {
+        if ((osdata[4] & 0x0F) >= 4) {
            Serial.print("BAT=LOW;"); 
         } else {        
            Serial.print("BAT=OK;"); 

@@ -74,8 +74,8 @@
 #define PLUGIN_ID 42
 #define PLUGIN_NAME "UPM"
 
-#define UPM_MIN_PULSECOUNT 50
-#define UPM_MAX_PULSECOUNT 54
+#define UPM_MIN_PULSECOUNT 48
+#define UPM_MAX_PULSECOUNT 56
 
 boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
 {

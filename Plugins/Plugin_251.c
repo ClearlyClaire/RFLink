@@ -82,16 +82,6 @@ boolean Plugin_251(byte function, struct NodoEventStruct *event, char *string)
       free(TempStr);
       break;
       }
-
-    case PLUGIN_MMI_OUT:
-      {
-      strcpy(string,PLUGIN_NAME);               // Commando 
-      strcat(string," ");
-      strcat(string,int2str(event->Par1));      // Parameter-1 (8-bit)
-      strcat(string,",");
-      strcat(string,int2str(event->Par2));      // Parameter-2 (32-bit)
-      break;
-      }
     #endif //MMI
     }    
   return success;

@@ -48,6 +48,10 @@
 #define PLUGIN_009
 #define PLUGIN_009_CORE
 
+// RGB Switch
+//#define PLUGIN_010
+//#define PLUGIN_010_CORE
+
 // Home Easy EU receive
 #define PLUGIN_015
 #define PLUGIN_015_CORE

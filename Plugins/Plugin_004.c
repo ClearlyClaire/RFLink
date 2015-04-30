@@ -28,7 +28,7 @@
  * Internal use of the paramters in the Nodo event: 
  * 
  * Cmd  : contains the command SendNewKAKU or the event NewKAKU. Unused.
- * Par1 : Command VALUE_ON, VALUE_OFF or dim level [1..15]
+ * Par1 : Command VALUE_ON, VALUE_OFF or dim level [0..15]
  * Par2 : Address
  *
  * Sample RF packet:
@@ -100,10 +100,6 @@ boolean Plugin_004(byte function, struct NodoEventStruct *event, char *string)
             bitstream=(bitstream<<1) | Bit;
           } else {                                                 // de resterende vier bits die tot het dimlevel behoren 
             event->Par1=(event->Par1<<1) | Bit;
-            //Serial.print(" ");
-            //Serial.print(i);
-            //Serial.print("=");
-            //Serial.print(Bit,BIN);
           }       
           i+=4;                                                    // volgende pulsenquartet
         } while(i<RawSignal.Number-2);                             //-2 omdat de space/pulse van de stopbit geen deel meer van signaal uit maakt.
@@ -124,7 +120,6 @@ boolean Plugin_004(byte function, struct NodoEventStruct *event, char *string)
         int command = (bitstream >> 4) & 0x03;
         if (command > 1) command ++;
         if (i>140) {                                                 // Commando en Dim deel
-            event->Par1++;                                           // Dim level. +1 omdat gebruiker dim level begint bij één.
             sprintf(buffer, "SET_LEVEL=%d;", event->Par1 );     
             Serial.print( buffer );
         } else {
@@ -135,17 +130,6 @@ boolean Plugin_004(byte function, struct NodoEventStruct *event, char *string)
         }
         Serial.println();
         // ----------------------------------
-        //if(bitstream>0xffff)                                       // Adres-deel: Is het signaal van een originele KAKU zender afkomstig, of van een Nodo ingegeven door de gebruiker ?
-        //  event->Par2=bitstream &0x0FFFFFCF;                       // Op hoogste nibble zat vroeger het signaaltype. & is t.b.v. compatibiliteit 
-        //else                                                       // Het is van een andere Nodo afkomstig. 
-        //  event->Par2=(bitstream>>6)&0xff;                         // Neem dan alleen 8bit v/h adresdeel van KAKU signaal over
-        //if(i>140)                                                  // Commando en Dim deel
-        //  event->Par1++;                                           // Dim level. +1 omdat gebruiker dim level begint bij één.
-        //else
-        //  event->Par1=((bitstream>>4)&0x01)?VALUE_ON:VALUE_OFF;    // On/Off bit omzetten naar een Nodo waarde. 
-        //event->SourceUnit    = 0;                                  // Komt niet van een Nodo unit af, dus unit op nul zetten
-        //event->Type          = NODO_TYPE_PLUGIN_EVENT;
-        //event->Command       = PLUGIN_ID;                          // nummer van dit device
         RawSignal.Repeats    = true;                               // het is een herhalend signaal. Bij ontvangst herhalingen onderdrukken.
         success=true;
         }   
@@ -178,7 +162,6 @@ boolean Plugin_004(byte function, struct NodoEventStruct *event, char *string)
         x=146;                                                     // verzend startbit + 32-bits = 130 + 4dimbits = 146
      
       // bitstream bevat nu de KAKU-bits die verzonden moeten worden.
-    
       for(i=3;i<=x;i++)RawSignal.Pulses[i]=NewKAKU_1T/RawSignal.Multiply;  // De meeste tijden in signaal zijn T. Vul alle pulstijden met deze waarde. Later worden de 4T waarden op hun plek gezet
       
       i=1;
@@ -199,7 +182,7 @@ boolean Plugin_004(byte function, struct NodoEventStruct *event, char *string)
             RawSignal.Pulses[i+3]=NewKAKU_1T/RawSignal.Multiply;   // moet een T,T,T,T zijn bij een dim commando.
           if(i==127)                                               // als alle pulsen van de 32-bits weggeschreven zijn
             {
-            bitstream=(unsigned long)event->Par1-1;                //  nog vier extra dim-bits om te verzenden. -1 omdat dim niveau voor gebruiker begint bij 1
+            bitstream=(unsigned long)event->Par1;                  //  nog vier extra dim-bits om te verzenden. 
             y=3;
             }
           }
@@ -208,7 +191,8 @@ boolean Plugin_004(byte function, struct NodoEventStruct *event, char *string)
       RawSignal.Pulses[i++]=NewKAKU_1T/RawSignal.Multiply;         // pulse van de stopbit
       RawSignal.Pulses[i]=0;                                       // space van de stopbit
       RawSignal.Number=i;                                          // aantal bits*2 die zich in het opgebouwde RawSignal bevinden
-      SendEvent(event,true,true,Settings.WaitFree==VALUE_ON);
+      //SendEvent(event,true,true,Settings.WaitFree==VALUE_ON);
+      SendEvent(event,true,true,Settings.WaitFree==VALUE_OFF);     // priority to transmit
       success=true;
       break;
       }
@@ -223,9 +207,6 @@ boolean Plugin_004(byte function, struct NodoEventStruct *event, char *string)
         {
         event->Type=0;
 
-        if(strcasecmp(str,PLUGIN_004_EVENT)==0)
-          event->Type=NODO_TYPE_PLUGIN_EVENT;
-
         if(strcasecmp(str,PLUGIN_004_COMMAND)==0)
           event->Type=NODO_TYPE_PLUGIN_COMMAND;
         
@@ -234,21 +215,20 @@ boolean Plugin_004(byte function, struct NodoEventStruct *event, char *string)
           if(GetArgv(string,str,2))
             {
             event->Par2=str2int(str); 
-
-            //Serial.print("Par2:");
-            //Serial.println( event->Par2,HEX );
-                        
             if(GetArgv(string,str,3)) {
               // Vul Par1 met het KAKU commando. Dit kan zijn: VALUE_ON, VALUE_OFF, 1..16. Andere waarden zijn ongeldig.
               
               // haal uit de tweede parameter een 'On' of een 'Off'.
-              if(event->Par1=str2cmd(str))
+              if(strcasecmp(str,"ON")==0) {
+                event->Par1=VALUE_ON;
                 success=true;
-                
-              // als dit niet is gelukt, dan uit de tweede parameter de dimwaarde halen.
-              else {
+              } else 
+              if(strcasecmp(str,"OFF")==0) {
+                event->Par1=VALUE_OFF;
+                success=true;
+              } else {                                             // als dit niet is gelukt, dan uit de tweede parameter de dimwaarde halen.
                 event->Par1=str2int(str);                          // zet string om in integer waarde
-                if(event->Par1>=1 && event->Par1<=16)              // geldig dim bereik 1..16 ?
+                if(event->Par1>=0 && event->Par1<=15)              // geldig dim bereik 0..15 ?
                    success=true;
                 }
               event->Command = PLUGIN_ID;                          // Plugin nummer  
@@ -257,34 +237,6 @@ boolean Plugin_004(byte function, struct NodoEventStruct *event, char *string)
           }
         }
       free(str);
-      break;
-      }
-
-    case PLUGIN_MMI_OUT:
-      {
-      if(event->Type==NODO_TYPE_PLUGIN_EVENT)
-        strcpy(string,PLUGIN_004_EVENT);                           // Eerste argument=het commando deel
-
-      if(event->Type==NODO_TYPE_PLUGIN_COMMAND)
-        strcpy(string,PLUGIN_004_COMMAND);                         // Eerste argument=het commando deel
-
-      strcat(string," ");
-    
-      // In Par3 twee mogelijkheden: Het bevat een door gebruiker ingegeven adres 0..255 of een volledig NewKAKU adres.
-      if(event->Par2>=0x0ff)
-        strcat(string,int2strhex(event->Par2)); 
-      else
-        strcat(string,int2str(event->Par2)); 
-      
-      strcat(string,",");
-      
-      if(event->Par1==VALUE_ON)
-        strcat(string,"On");  
-      else if(event->Par1==VALUE_OFF)
-        strcat(string,"Off");
-      else
-        strcat(string,int2str(event->Par1));
-
       break;
       }
     #endif //MMI

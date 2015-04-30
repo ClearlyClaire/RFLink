@@ -86,16 +86,6 @@ boolean Plugin_081(byte function, struct NodoEventStruct *event, char *string)
     free(TempStr);
     break;
     }
-
-  case PLUGIN_MMI_OUT:
-    {
-    strcpy(string,PLUGIN_NAME);            // Eerste argument=het commando deel
-    strcat(string," ");
-    strcat(string,int2str(event->Par1));
-    strcat(string,",");
-    strcat(string,int2str(event->Par2));
-    break;
-    }
 #endif //NODO_MEGA
   }      
   return success;

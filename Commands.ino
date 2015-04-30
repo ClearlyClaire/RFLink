@@ -21,6 +21,7 @@ boolean ExecuteCommand(struct NodoEventStruct *EventToExecute)
   
   switch(EventToExecute->Command)
     {   
+/*      
     case CMD_VARIABLE_TOGGLE:
       UserVar[EventToExecute->Par1-1]=UserVar[EventToExecute->Par1-1]>0.5?0.0:1.0;
       TempEvent.Type         = NODO_TYPE_EVENT;
@@ -89,7 +90,7 @@ boolean ExecuteCommand(struct NodoEventStruct *EventToExecute)
       TempEvent.Direction=VALUE_DIRECTION_INPUT;
       ProcessEvent(&TempEvent);      // verwerk binnengekomen event.
       break;        
-
+*/
     case CMD_VARIABLE_PULSE_COUNT:
       // Tellen van pulsen actief: enable IRQ behorende bij PIN_IR_RX_DATA
       // Als er toch een reeks pulsen komt, dan wordt in FetchSignal() het tellen van pulsen gedisabled.
@@ -126,7 +127,7 @@ boolean ExecuteCommand(struct NodoEventStruct *EventToExecute)
     case CMD_STOP:
       error=MESSAGE_EXECUTION_STOPPED;
       break;
-
+/*
     case CMD_BREAK_ON_VAR_EQU:
       {
       if((int)UserVar[EventToExecute->Par1-1]==(int)ul2float(EventToExecute->Par2))
@@ -179,7 +180,7 @@ boolean ExecuteCommand(struct NodoEventStruct *EventToExecute)
         error=MESSAGE_BREAK;
       break;
     #endif CLOCK 
-
+*/
 
     case CMD_SEND_USEREVENT:
       TempEvent.Port                  = VALUE_ALL;
@@ -199,7 +200,7 @@ boolean ExecuteCommand(struct NodoEventStruct *EventToExecute)
       TempEvent.Par2=float2ul(UserVar[EventToExecute->Par1-1]);
       SendEvent(&TempEvent, false, true,Settings.WaitFree==VALUE_ON);
       break;         
-
+/*
     case CMD_VARIABLE_SAVE:
       for(z=1;z<=USER_VARIABLES_MAX;z++)
         {
@@ -234,7 +235,7 @@ boolean ExecuteCommand(struct NodoEventStruct *EventToExecute)
         }
 
       break;
-
+*/
     case CMD_LOCK:
       if(EventToExecute->Par1==VALUE_ON)
         {// Als verzoek om inschakelen dan Lock waarde vullen
@@ -253,7 +254,7 @@ boolean ExecuteCommand(struct NodoEventStruct *EventToExecute)
       Save_Settings();
       break;
 
-
+/*
     #if NODO_MEGA
     #if CLOCK
     case CMD_ALARM_SET:
@@ -327,9 +328,8 @@ boolean ExecuteCommand(struct NodoEventStruct *EventToExecute)
       Time.Year    =((EventToExecute->Par2>>12 )&0xf)*1000 + ((EventToExecute->Par2>>8 )&0xf)*100 + ((EventToExecute->Par2>>4)&0xf)*10 + ((EventToExecute->Par2)&0xf);
       ClockSet();
       break;
-
     #endif CLOCK 
-
+*/
     case CMD_TIMER_SET:
       if(EventToExecute->Par2==0)
         UserTimer[EventToExecute->Par1-1]=0L;
@@ -575,7 +575,7 @@ boolean ExecuteCommand(struct NodoEventStruct *EventToExecute)
       break;
 
 #if NODO_MEGA // vanaf hier commando's die alleen de Mega kent.
-
+/*
     case CMD_VARIABLE_LOG:
       {
       if(EventToExecute->Par1==0)
@@ -599,7 +599,7 @@ boolean ExecuteCommand(struct NodoEventStruct *EventToExecute)
         }        
       break;
       }
-
+*/
     case CMD_VARIABLE_GET: // VariableReceive <Variabelenummer_Bestemming>, <unit>, <Variabelenummer_Bron_Andere_Nodo>
       y=0; // retries
       error=MESSAGE_SENDTO_ERROR;
@@ -737,5 +737,4 @@ boolean ExecuteCommand(struct NodoEventStruct *EventToExecute)
 
   return error;
   }
-
 
