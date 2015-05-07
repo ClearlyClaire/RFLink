@@ -37,6 +37,7 @@
  * E = Always 1111 ?
  * F = Humidity
  *
+ *
  * Sample:
  * 20;1F;DEBUG;Pulses=74;Pulses(uSec)=550,1575,525,675,525,1625,500,700,475,725,500,1675,500,700,500,725,475,1675,475,750,450,750,475,725,450,750,450,750,475,750,450,750,475,1675,450,1700,425,1700,450,750,450,750,450,1700,450,1700,450,775,450,1700,450,1700,450,1700,425,1700,425,775,450,775,450,775,425,775,425,775,425,775,450,775,425,775,425,
  \*********************************************************************************************/
@@ -69,7 +70,9 @@ boolean Plugin_046(byte function, struct NodoEventStruct *event, char *string)
       //==================================================================================
       // get all the bits we need (36 bits)
       for(int x=2;x<RawSignal.Number;x+=2) {
+         if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 700) return false;
          if (RawSignal.Pulses[x]*RawSignal.Multiply > 1400) {
+            if (RawSignal.Pulses[x]*RawSignal.Multiply > 2000) return false;
             if (bitcounter < 24) {
                bitstream1 = (bitstream1 << 1) | 0x1;
                bitcounter++;                        // only need to count the first 10 bits
@@ -95,8 +98,8 @@ boolean Plugin_046(byte function, struct NodoEventStruct *event, char *string)
       if ((bitstream2 & 0xfff) != 0xF00) { 
          type=1;                                    // Xiron
          if (RawSignal.Pulses[0] != PLUGIN_ID) {
-            Serial.println("Xiron ID error");                // Label
-            //return false; // only accept plugin1 translated Xiron packets
+            //Serial.println("Xiron ID error");
+            return false; // only accept plugin_001 translated Xiron packets
          }
       } else {
          type=0;                                    // Auriol

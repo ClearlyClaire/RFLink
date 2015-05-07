@@ -1179,8 +1179,13 @@ void loop()
                   } else
                   if (strncasecmp(InputBuffer_Serial+3,"HOMEEASY;",9) == 0) { // KAKU Command eg. 
                      //10;HomeEasy;7900b200;b;ON;
+                     //10;HomeEasy;d900ba00;23;OFF;
                      //01234567890123456789012345  
-                     strcpy(tempbuf,InputBuffer_Serial+23);
+                     if (InputBuffer_Serial[23] == ';') {
+                        strcpy(tempbuf,InputBuffer_Serial+24);
+                     } else {
+                        strcpy(tempbuf,InputBuffer_Serial+23);
+                     }
                      unsigned long tempval=0L;
                      byte tempbyte0=0;
                      byte tempbyte1=0;

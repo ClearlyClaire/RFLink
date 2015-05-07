@@ -1,0 +1,57 @@
+r18:
+- Added Banggood SKU174397, Sako CH113, Homemart/Onemall FD030 and Blokker (Dake) 1730796 outdoor temperature sensor
+- Tested Okay: Promax RSL366T, Profile PR-44N & PR-47N
+- Fixed: LaCrosse humidity values are correctly displayed
+- Fixed: Humidity values that originate from slave Nodos are correctly displayed
+- Fixed: UPM/Esic insane temperature values are skipped
+- Removed Xiron & Auriol debug data 
+- Tightened pulse range on various protocols to prevent false positives
+===
+r17:
+- Modified Oregon THGR228N code, 
+- Modified Newkaku(AC) dim values, 
+- Corrected support for KAKU door switches, 
+- Fixed Nodo Slave sensors, 
+- Improved speed and priorities so that group commands are properly transmitting
+===
+r16: 
+- Fixed Aleco V1 temperature ID to match wind sensors
+- Fixed HomeEasy transmit
+- Added AC(NewKaku) dimmer support
+===
+r15:
+- Improved large packet translation
+===
+r14: 
+- Changed Motion sensors (60/61)
+===
+r13:
+- Flamingo Smoke detector fix
+- Added Xiron sensor support
+===
+r11/12:
+- Mertik / Dru Send added
+===
+r10:
+- Added Auriol Z32171A
+===
+r9:
+- Fixed Kaku send with high device id's (P1 M1 etc)
+===
+r8:
+- Improved descriptions
+===
+r7:
+- Fixed Oregon RTGR328N ID and humidity format
+- Fixed UPM/Esic humidity format
+- Fixed Alecto humidity format
+===
+r6:
+- Fixed Auriol V2 plugin
+- Updated Auriol plugin
+- Fixed Lacrosse Humidity
+===
+r1/2/3/4/5:
+- Added X10 receive/transmit plugin
+- Minor changes & improvements
+===

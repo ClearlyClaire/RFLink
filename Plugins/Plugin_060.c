@@ -42,13 +42,15 @@ boolean Plugin_060(byte function, struct NodoEventStruct *event, char *string)
       char buffer[11]=""; 
       //==================================================================================
       if (RawSignal.Number != ALARMPIRV2_PULSECOUNT) return false;
-      if (RawSignal.Pulses[1]*RawSignal.Multiply > 550) return false;    // First pulse is startbit and should be short!
+      if (RawSignal.Pulses[1]*RawSignal.Multiply > 550) return false;    // First pulse is start bit and should be short!
       for(byte x=2;x<RawSignal.Number;x=x+2) {
-          if (RawSignal.Pulses[x]*RawSignal.Multiply > 700) {
+          if (RawSignal.Pulses[x]*RawSignal.Multiply > 700) { // long pulse
              if (RawSignal.Pulses[x]*RawSignal.Multiply > 1000) return false;
+             if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 700) return false; // invalid manchestercode
              bitstream = bitstream << 1;
-          } else {
-             if (RawSignal.Pulses[x]*RawSignal.Multiply < 250) return false;
+          } else { // short pulse
+             if (RawSignal.Pulses[x]*RawSignal.Multiply < 250) return false;  // too short
+             if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 700) return false; // invalid manchestercode
              bitstream = (bitstream << 1) | 0x1; 
           }
       }

@@ -61,7 +61,7 @@ boolean Plugin_045(byte function, struct NodoEventStruct *event, char *string)
       //==================================================================================
       if (RawSignal.Number == AURIOL_PULSECOUNT) {
 		 for(int x=2;x <66;x+=2) {
-            //if(RawSignal.Pulses[x]*RawSignal.Multiply > 1200) {
+            if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 550) return false;
             if(RawSignal.Pulses[x]*RawSignal.Multiply > 3000) {
               bitstream1 = (bitstream1 << 1) | 0x1; 
             } else {

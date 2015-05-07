@@ -81,10 +81,7 @@
 #define PLUGIN_ID 43
 #define PLUGIN_NAME "LaCrosse"
 
-//#define LACROSSE_TERM_PULSECOUNT 44*2
-//#define LACROSSE_RAIN_PULSECOUNT 44*2
 #define LACROSSE_PULSECOUNT 88
-//#define LACROSSE_MIN_PULSECOUNT 38*2
 
 boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
 {
@@ -149,6 +146,17 @@ boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
       checksum=checksum & 0x0f;
       if (checksum != (bitstream2 &0x0f )) return false;
       //==================================================================================
+      // Prevent repeating signals from showing up, skips every second packet!
+      //==================================================================================
+      if(!RawSignal.RepeatChecksum && (SignalHash!=SignalHashPrevious || RepeatingTimer<millis())) {
+         // not seen this RF packet recently
+      } else {
+         if (data[2]== 0x00) {
+            RawSignal.Number=0;
+            return true;         // already seen the RF packet recently, but still want the humidity
+         }
+      }  
+      //==================================================================================
       // Only accept temp and humidity packets for now, we need test data for other packet types
       //if (data[2]!= 0x00 && data[2] != 0x0e) return false;
  	  //==================================================================================
@@ -156,7 +164,7 @@ boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
       //==================================================================================
       // Output
       // ----------------------------------
-      if (data[2]== 0) {
+      if (data[2]== 0x00) {
          sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
          Serial.print( buffer );
          Serial.print("LaCrosse;");                       // Label
@@ -168,6 +176,7 @@ boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
          temperature = temperature-500;
          sprintf(buffer, "TEMP=%04x;", temperature);     
          Serial.print( buffer );
+         RawSignal.Repeats=false; 
       } else
       if (data[2]==0x0e) {
          humidity=(data[5]*16)+data[6];
@@ -179,6 +188,7 @@ boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
          Serial.print( buffer );
          sprintf(buffer, "HUM=%02x;", humidity);     
          Serial.print( buffer );
+         RawSignal.Repeats=true;
       } else {
          sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
          Serial.print( buffer );
@@ -192,7 +202,6 @@ boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
       }
       Serial.println();
       //==================================================================================
-      RawSignal.Repeats=true;
       RawSignal.Number=0;
       success=true;
       break;

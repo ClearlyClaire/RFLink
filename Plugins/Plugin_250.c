@@ -78,7 +78,7 @@ boolean Plugin_250(byte function, struct NodoEventStruct *event, char *string) {
          Serial.print("Slave;");                          // Label
          sprintf(buffer, "ID=%02x%02x;", event->Par1, event->SourceUnit); // ID    
          Serial.print( buffer );
-         sprintf(buffer, "HUM=%02x;", humidity);     
+         sprintf(buffer, "HUM=%02d;", humidity);     
          Serial.print( buffer );
          Serial.println();
          //==================================================================================

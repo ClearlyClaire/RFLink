@@ -1,6 +1,6 @@
 //#######################################################################################################
 //##                    This Plugin is only for use with the RFLink software package                   ##
-//##                                       Plugin-44 Auriol                                            ##
+//##                                       Plugin-44 Auriol V3                                         ##
 //#######################################################################################################
 /*********************************************************************************************\
  * This plugin takes care of decoding the Auriol protocol for sensor type Z32171A
@@ -59,7 +59,8 @@ boolean Plugin_044(byte function, struct NodoEventStruct *event, char *string)
       //==================================================================================
       // get all the bits we need (40 bits)
       for(int x=2;x<RawSignal.Number;x+=2) {
-         if (RawSignal.Pulses[x]*RawSignal.Multiply > 3500) {
+        if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 650) return false;
+        if (RawSignal.Pulses[x]*RawSignal.Multiply > 3500) {
             if (bitcounter < 16) {
                bitstream1 = (bitstream1 << 1) | 0x1;
                bitcounter++;                     // only need to count the first 10 bits
@@ -78,18 +79,17 @@ boolean Plugin_044(byte function, struct NodoEventStruct *event, char *string)
          }
       }
       //==================================================================================
-      // Prevent repeating signals from showing up
+      // Perform sanity checks and prevent repeating signals from showing up
       //==================================================================================
       if(!RawSignal.RepeatChecksum && (SignalHash!=SignalHashPrevious || RepeatingTimer<millis())) {
          // not seen the RF packet recently
+         if (bitstream1 == 0) return false;
+         if (bitstream2 == 0) return false;
+         // All is fine
       } else {
          // already seen the RF packet recently
          return true;
       } 
-      //==================================================================================
-      // First perform sanity checks
-      if (bitstream1 == 0) return false;
-      if (bitstream2 == 0) return false;
       //==================================================================================
       rc = (bitstream1 >> 8) & 0xff ;               // get rolling code
       temperature = ((bitstream2)>>12) & 0xfff;     // get 12 temperature bits

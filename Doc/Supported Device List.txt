@@ -4,8 +4,10 @@ Nodo - RFLink supported devices list
 Remote Controls and Electrical Switches / Dimmers etc.:
 -------------------------------------------------------
 Klik Aan Klik Uit (Code Wheel)                      (Send + Receive)
- -  Princeton PT2262 / MOSDESIGN M3EB / Domia Lite / Klik-Aan-Klik-Uit / Intertechno)
- -  CoCo Technologies / Cogex / D-IO (Chacon) / Nexa / Düwi Terminal
+ - Princeton PT2262 / MOSDESIGN M3EB / Domia Lite / Klik-Aan-Klik-Uit / Intertechno)
+ - CoCo Technologies / Cogex / D-IO (Chacon) / Nexa / Düwi Terminal
+ - Promax RSL366T
+ - Profile PR-44N, PR-47N
     
 Klik Aan Klik Uit (Automatic Code Learning)         (Send + Receive)
   (among others: AWMR210, AWMT230, AWMD250, AWST8800)
@@ -35,6 +37,8 @@ Alecto V2: (868 Mhz!)
           ACH2010, DKW2012
 Alecto V3: 
           WS1100, WS1200
+Alecto V4: 
+          Banggood SKU174397, Sako CH113, Homemart/Onemall FD030 and Blokker (Dake) 1730796 outdoor temperature sensor
 Cresta/Hideki:
           Hideki, TFA Nexus, Mebus, Irox, Irox-Pro X, Honeywell, Cresta TE923, TE923W, TE821W,  
           WXR810, DV928, Ventus W906, HomeWizard Rain meter
@@ -92,5 +96,5 @@ Plieger York                                                                   (
 Nodo Slave Sensors:
 -------------------
 Temperature, Humidity, UV, barometric Pressure, OpenTherm and any other kind 
-of Nodo sensor you want to include.
+of Nodo sensor you want to include (let us know if it is not supported yet).
 ============================================================================

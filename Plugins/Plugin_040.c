@@ -26,7 +26,7 @@
  * E = Always 1
  * F = 0 when "normal" data transmit, 1 when "requested" data transmit (TX button press)
  *
- * Needs SIGNAL_TIMEOUT=5 
+ * 20;DE;DEBUG;Pulses=58;Pulses(uSec)=525,1800,350,1800,350,4275,350,1800,350,4275,350,4275,350,4275,350,1800,350,4250,350,4275,350,1800,350,4250,350,1800,350,1800,350,1800,350,1800,350,4275,350,4275,350,4250,350,1800,350,1800,350,1800,350,4275,350,4250,350,1800,350,4275,350,4275,350,4250,350;
  \*********************************************************************************************/
    // ==================================================================================
    // MEBUS bit packets 
@@ -66,10 +66,11 @@ boolean Plugin_040(byte function, struct NodoEventStruct *event, char *string)
       //==================================================================================
       // get all 28 bits
       for(byte x=2;x <=56;x+=2) {
-         if(RawSignal.Pulses[x]*RawSignal.Multiply > 2975) {
-           bitstream1 = (bitstream1 << 1) | 0x1; 
+         if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 550) return false;
+         if (RawSignal.Pulses[x]*RawSignal.Multiply > 2975) {
+            bitstream1 = (bitstream1 << 1) | 0x1; 
          } else {
-           bitstream1 = (bitstream1 << 1);
+            bitstream1 = (bitstream1 << 1);
          }
       }
       //==================================================================================
@@ -91,7 +92,6 @@ boolean Plugin_040(byte function, struct NodoEventStruct *event, char *string)
       temperature=(data[3]<<8)+(data[4]<<4)+data[5];
       if (temperature > 3000) {
          temperature=4096-temperature;              // fix for minus temperatures
-         //minus=1;
          temperature=temperature | 0x8000;          // turn highest bit on for minus values
       }
       //==================================================================================
@@ -112,7 +112,6 @@ boolean Plugin_040(byte function, struct NodoEventStruct *event, char *string)
       break;
     }
 #endif // PLUGIN_040_CORE
-
   }      
   return success;
 }

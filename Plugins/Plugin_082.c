@@ -76,12 +76,14 @@ boolean Plugin_082(byte function, struct NodoEventStruct *event, char *string)
       byte status=0;
       char buffer[14]="";
       //==================================================================================
-      // get bytes
-
-            for(int x=3;x<=RawSignal.Number-1;x=x+2) {
+      // get bits
+      for(int x=3;x<=RawSignal.Number-1;x=x+2) {
          if (RawSignal.Pulses[x]*RawSignal.Multiply < 550) {
+            if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 550) return false;
             bitstream = (bitstream << 1);           // 0
          } else {
+            if (RawSignal.Pulses[x]*RawSignal.Multiply > 900) return false;
+            if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 550) return false;
             bitstream = (bitstream << 1) | 0x1;     // 1
          }
       }

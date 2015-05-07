@@ -62,10 +62,12 @@ boolean Plugin_070(byte function, struct NodoEventStruct *event, char *string)
       //==================================================================================
       // get bytes 
       for(byte x=2;x<RawSignal.Number;x=x+2) {
-         if (RawSignal.Pulses[x]*RawSignal.Multiply < 750) {
+         if (RawSignal.Pulses[x]*RawSignal.Multiply < 600) {
+            if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 600) return false; // invalid manchestercode
             bitstream1 = (bitstream1 << 1);
          } else {
             if (RawSignal.Pulses[x]*RawSignal.Multiply > 1200) return false;  // invalid pulse duration 
+            if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 550) return false; // invalid manchestercode
             bitstream1 = (bitstream1 << 1) | 0x1; 
          }
       }

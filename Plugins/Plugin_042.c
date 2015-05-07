@@ -138,6 +138,8 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
       // first perform a check to make sure the packet is a valid UPM/Esic packet 
       // by comparing the first 4 bits which are always? 1100
       if ( (bitstream1 >> 6 ) != 0x0c ) return false;  
+      if ( bitstream1 == 0x00 ) return false;  
+      if ( bitstream2 == 0x00 ) return false;  
       //==================================================================================
       // perform a checksum check to make sure the packet is a valid UPM/Esic packet
       // Checksum - xor all odd and all even bits should match the last two bits
@@ -220,6 +222,7 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
             temperature = (bitstream2 >> 8) & 0x7f;
             temperature = temperature-50;
             temperature = (temperature*10) + units;
+            if (temperature > 0x3e8) return false;
             humidity = (bitstream2 >> 15) & 0xff;   // humidity
             humidity = humidity / 2;
             //if (humidity==0) return false;            // dont accept Bad humidity status
@@ -250,6 +253,7 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
          temperature = temperature-50;
          temperature = (temperature*100) + units;
          temperature = temperature/10;
+         if (temperature > 0x3e8) return false;
          humidity = (bitstream2 >> 16) & 0x7f;      // humidity
          //if (humidity==0) return false;             // dont accept Bad humidity status
          //if (temperature > 1000) return false;      // dont accept bad temperature

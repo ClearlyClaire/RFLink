@@ -41,6 +41,24 @@
    11000111100 10111101001101011011001011011100 1011 01 01 101100 1 HE300EU4:OFF,Switch:IV
    11000111100 10111011010100011110110101100011 1011 01 01 000101 1 #channel 11 off
    
+   0B 11 01 08 00 00 80 40 03 01 0F 30 
+   20;11;HomeEasy;ID=7900b200;ID=79b2a5c3;SWITCH=0d;CMD=ALLOFF;
+   0B 11 01 0B 00 00 80 40 03 01 0F 40 
+   20;49;HomeEasy;ID=7900b200;ID=79b2a5c3;SWITCH=0d;CMD=ALLOFF;
+   
+   0B 11 01 15 00 00 80 40 03 00 00 40    
+   20;89;HomeEasy;ID=7900b200;ID=79b2a5c3;SWITCH=0d;CMD=ALLON;
+
+   0B 11 01 0F 00 00 80 40 02 00 00 30 
+   20;6F;HomeEasy;ID=7900b200;ID=79b2a5c3;SWITCH=0b;CMD=ALLON;
+   0B 11 01 10 00 00 80 40 02 01 0F 40 
+   20;7E;HomeEasy;ID=7900b200;ID=79b2a5c3;SWITCH=0b;CMD=ALLOFF;
+
+   10 11 10 11 01 01 00 01 11 10 11 01 01 10 00 11
+   
+   80       40
+   10000000 01000000
+   
  * A = Startbits/Preamble, 
  * B = Address, 32 bits
  * C = Unknown, Possibly: Device type 
@@ -48,7 +66,7 @@
  * E = Group indicator
  * F = Channel  0-15
  * G = Stopbit
-
+ 
  * SAMPLE:
  * Pulses=116;Pulses(uSec)=200,1175,125,1175,125,200,150,200,125,200,150,1175,150,1175,150,1175,150,1175,125,200,150,200,150,200,125,1175,150,1175,150,1175,125,1175,150,200,125,200,150,1175,125,1175,150,200,125,1175,125,1175,150,200,150,200,150,1175,150,200,150,1175,150,200,150,1175,150,200,150,200,125,1175,150,200,125,1175,150,1175,125,1175,150,200,125,200,125,200,150,200,125,1175,150,1175,150,1175,150,200,150,200,125,200,150,1175,150,1175,150,1175,150,1175,125,200,150,200,125,1175,125,200,125,1175,150,1150,125;
  * HE preamble: 11000111100 (63C) Address: 1111001101100101010010111000011 (79B2A5C3) Stopbits: 0 (0) Commands: 10001111001011 Command: 0 Channel: 1011 Group: 1
@@ -115,13 +133,13 @@ boolean Plugin_015(byte function, struct NodoEventStruct *event, char *string)
       command = ((bitstream >> 9) & 0x1);      // 1=off 0=on ?
       channel = (bitstream) & 0x3f;
       group = ((bitstream >> 7) & 0x1);        // 1=group 
+      byte hibyte=(address)>> 24;
+      byte hibyte2=(address)>> 16;
       // -------------------------
       /*
-      Serial.print("HE Address: ");    
-      Serial.print(address,BIN);    
-      Serial.print(" (");    
+      Serial.print("HE: ");    
       Serial.print(address,HEX);    
-      Serial.print(") Commands: ");    
+      Serial.print(" Commands: ");    
       Serial.print(bitstream, BIN);    
       Serial.print(" Command: ");    
       Serial.print(command);    
@@ -137,7 +155,6 @@ boolean Plugin_015(byte function, struct NodoEventStruct *event, char *string)
       //Serial.print(channel);    
       //Serial.print(" ");    
       //Serial.println(address);    
-
       // ----------------------------------
       // Output
       // ----------------------------------
@@ -145,7 +162,7 @@ boolean Plugin_015(byte function, struct NodoEventStruct *event, char *string)
       Serial.print( buffer );
       // ----------------------------------
       Serial.print("HomeEasy;");                  // Label
-      sprintf(buffer, "ID=%02x%02x%02x%02x;", (address>>24)&0xff  ,(address>>16)&0xff,(address>>8)&0xff, address&0xff); // ID    
+      sprintf(buffer, "ID=%02x%02x%04x;", (hibyte)&0xff  ,(hibyte2)&0xff,(address&0xffff) ); // ID    
       Serial.print( buffer );
       sprintf(buffer, "SWITCH=%02x;", channel);     
       Serial.print( buffer );

@@ -28,12 +28,8 @@
  * 1010010110010110011010011001011001100101101010100
  * 00110110100101101011 000 0
  * 01110001101100011111 000 0
-\*********************************************************************************************/
+ \*********************************************************************************************/
 #define PLUGIN_ID 5
-
-#define Eurodomest_PulseLength    50
-#define Eurodomest_MaxPulse       900
-#define PLUGIN_005_EVENT        "Eurodomest"
 #define PLUGIN_005_COMMAND      "EurodomestSend"
 
 void Eurodomest_Send(unsigned long address);
@@ -55,14 +51,16 @@ boolean Plugin_005(byte function, struct NodoEventStruct *event, char *string)
       char buffer[14]=""; 
       unsigned long address=0;
       // ==========================================================================
-      if (RawSignal.Number!= (Eurodomest_PulseLength) ) return false; 
+      if (RawSignal.Number!=50) return false; 
       if(RawSignal.Pulses[49]*RawSignal.Multiply > 400) return false;  // last pulse (stop bit) needs to be short, otherwise no Eurodomest protocol
       // get all 24 bits
-      for(int x=2;x < Eurodomest_PulseLength;x+=2) {
-          if(RawSignal.Pulses[x]*RawSignal.Multiply > 400) {
-             if(RawSignal.Pulses[x]*RawSignal.Multiply > Eurodomest_MaxPulse) return false; // make sure the long pulse is within range
+      for(int x=2;x < 50;x+=2) {
+          if(RawSignal.Pulses[x]*RawSignal.Multiply > 400) { // long pulse
+             if (RawSignal.Pulses[x-1]*RawSignal.Multiply > 400) return false; // not a 01 or 10 transmission 
+             if(RawSignal.Pulses[x]*RawSignal.Multiply > 900) return false; // make sure the long pulse is within range
              bitstream = (bitstream << 1) | 0x1; 
-         } else {
+         } else { // short pulse
+             if (RawSignal.Pulses[x-1]*RawSignal.Multiply < 400) return false; // not a 01 or 10 transmission 
              bitstream = (bitstream << 1);
          }
       }

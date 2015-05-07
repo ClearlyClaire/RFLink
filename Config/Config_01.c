@@ -70,6 +70,10 @@
 #define PLUGIN_031
 #define PLUGIN_031_CORE
 
+// Alecto V4
+#define PLUGIN_032
+#define PLUGIN_032_CORE
+
 // Cresta 
 #define PLUGIN_034
 #define PLUGIN_034_CORE
