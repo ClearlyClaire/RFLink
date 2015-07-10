@@ -24,146 +24,141 @@
  * B = UnitCode (3 bits)
  * C = switch code (ON/OFF) (1 bit)
  *
+ * 07FFFF 19 bits max ?
+ * 20;2A;DEBUG;Pulses=50;Pulses(uSec)= 900,200,825,200,225,825,200,825,800,200,200,825,200,825,825,200,225,825,800,200,800,225,225,825,800,225,200,825,225,825,800,225,225,825,800,225,200,825,200,825,225,825,225,825,225,825,800,200,200;
  * 20;9D;DEBUG;Pulses=50;Pulses(uSec)=1250,200,750,175,200,750,200,750,750,200,200,750,200,750,750,200,200,750,750,200,750,200,200,750,750,200,200,750,200,750,750,200,200,750,750,200,200,750,200,750,750,200,750,200,750,200,750,200,200;
  * 1010010110010110011010011001011001100101101010100
  * 00110110100101101011 000 0
  * 01110001101100011111 000 0
  \*********************************************************************************************/
-#define PLUGIN_ID 5
-#define PLUGIN_005_COMMAND      "EurodomestSend"
+#define EURODOMEST_PulseLength    50
 
 void Eurodomest_Send(unsigned long address);
 
-boolean Plugin_005(byte function, struct NodoEventStruct *event, char *string)
-  {
+boolean Plugin_005(byte function, char *string) {
     boolean success=false;
     unsigned long bitstream=0;
   
-  switch(function)
-    {
     #ifdef PLUGIN_005_CORE
-
-    case PLUGIN_RAWSIGNAL_IN:
-      {
       byte housecode=0;
       byte unitcode=0;
       byte command=0;
-      char buffer[14]=""; 
       unsigned long address=0;
       // ==========================================================================
-      if (RawSignal.Number!=50) return false; 
+      if (RawSignal.Number != EURODOMEST_PulseLength) return false; 
       if(RawSignal.Pulses[49]*RawSignal.Multiply > 400) return false;  // last pulse (stop bit) needs to be short, otherwise no Eurodomest protocol
       // get all 24 bits
-      for(int x=2;x < 50;x+=2) {
-          if(RawSignal.Pulses[x]*RawSignal.Multiply > 400) { // long pulse
+      for(int x=2;x < EURODOMEST_PulseLength;x+=2) {
+         if(RawSignal.Pulses[x]*RawSignal.Multiply > 400) { // long pulse
              if (RawSignal.Pulses[x-1]*RawSignal.Multiply > 400) return false; // not a 01 or 10 transmission 
              if(RawSignal.Pulses[x]*RawSignal.Multiply > 900) return false; // make sure the long pulse is within range
              bitstream = (bitstream << 1) | 0x1; 
          } else { // short pulse
+             if (RawSignal.Pulses[x]*RawSignal.Multiply < 100) return false;   // pulse too short to be Eurodomest
              if (RawSignal.Pulses[x-1]*RawSignal.Multiply < 400) return false; // not a 01 or 10 transmission 
              bitstream = (bitstream << 1);
          }
       }
       //==================================================================================
+      // Prevent repeating signals from showing up
+      //==================================================================================
+      if(SignalHash!=SignalHashPrevious || RepeatingTimer<millis()) { 
+         // not seen the RF packet recently
+         if (bitstream==0) return false;               // no bits detected? 
+      } else {
+         // already seen the RF packet recently
+         return true;
+      }      
+      //==================================================================================
       // perform sanity checks to prevent false positives
-      if (bitstream==0) return false;               // no bits detected? 
+      //==================================================================================
       address=bitstream;
       address=(address >> 4) &0xfffff;
-      address=(address >> 4) &0xfffff;
-      if ( (address ) & 0xf0000 == 0xf0000) return false;   // Addresses with the highest 4 bits all set are not accepted 
+      //if ( (address ) & 0xf0000 == 0xf0000) return false;   // Addresses with the highest 4 bits all set are not accepted 
       if (address==0) return false;                 // Address would never be 0 
       if (address==0xfffff) return false;           // Address would never be FFFFF
+      if (address > 0x0007FFFFL) return false;      // Address max. 19 bits
       // ----------------------------------
       unitcode=(( bitstream >> 1)& 0x7);
       command=((bitstream) & 0x01);              
       if (unitcode == 3) return false;              // invalid button code?
-      if (unitcode == 4) unitcode--;                // unitcode 5 is present on the PCB and working.
+      if (unitcode == 4) unitcode--;                
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      
+//      if (unitcode == 5) return false;              // Note: unitcode 5 is present on the PCB and working but not used on any remotes.
       if (unitcode > 7) return false;               // invalid button code?
-      housecode=(address >> 16) &0xff;
+      housecode=(address >> 16) &0xff;              
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+      Serial.print( pbuffer );
       // ----------------------------------
-      Serial.print("Eurodomest;");                  // Label
-      sprintf(buffer, "ID=%02x%04x;", housecode, (address)&0xffff) ; // ID    
-      Serial.print( buffer );
-      sprintf(buffer, "SWITCH=%02x;", unitcode);    // ID    
-      Serial.print( buffer );
-      Serial.print("CMD=");                    
+      Serial.print(F("Eurodomest;"));               // Label
+      sprintf(pbuffer, "ID=%02x%04x;", housecode, (address)&0xffff) ; // ID    
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "SWITCH=%02x;", unitcode);    // ID    
+      Serial.print( pbuffer );
+      Serial.print(F("CMD="));                    
       if ( unitcode > 4) {
-         Serial.print("ALL");
+         Serial.print(F("ALL"));
          if ( command == 0) {
-            Serial.print("OFF;");
+            Serial.print(F("OFF;"));
          } else {
-            Serial.print("ON;");
+            Serial.print(F("ON;"));
          }
       } else {     
          if ( command == 1) {
-            Serial.print("OFF;");
+            Serial.print(F("OFF;"));
          } else {
-            Serial.print("ON;");
+            Serial.print(F("ON;"));
          }
       }
       Serial.println();
       // ----------------------------------
-      RawSignal.Repeats = true;                     // Suppress repeating RF packets
+      RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
       RawSignal.Number=0;
       success=true;
-      break;
-      }
-    case PLUGIN_COMMAND:
-      {
-      event->Port=VALUE_ALL;                        // Signaal mag naar alle door de gebruiker met [Output] ingestelde poorten worden verzonden.
-      Eurodomest_Send(event->Par2);                 // event->Par2 contains the full bitstream to send
-      success=true;
-      break;
-    }
     #endif //PLUGIN_CORE_005
-      
-    #if NODO_MEGA
-    case PLUGIN_MMI_IN:
-      {
-        char *str=(char*)malloc(INPUT_COMMAND_SIZE);
-        if(GetArgv(string,str,1)) {
-            event->Type  = 0;
-            if(strcasecmp(str,PLUGIN_005_COMMAND)==0) {
-                event->Type  = NODO_TYPE_PLUGIN_COMMAND;
-            }
-            if(event->Type) {
-                event->Command = PLUGIN_ID;         // Plugin number
-     
-                if(GetArgv(string,str,2)) {         // Het door de gebruiker ingegeven eerste parameter bevat het adres
-                   event->Par2=str2int(str); 
-                   if(GetArgv(string,str,3)) {      // Het door de gebruiker ingegeven tweede parameter bevat het button nummer
-                      byte temp=str2int(str);
-                      event->Par2=(event->Par2) << 4;
-                      if (temp == 1) event->Par2=event->Par2+0x02; // 0010
-                      if (temp == 2) event->Par2=event->Par2+0x04; // 0100
-                      if (temp == 3) event->Par2=event->Par2+0x08; // 1000
-                      if (temp == 6) event->Par2=event->Par2+0x0d; // 1101
-                      if (temp == 7) event->Par2=event->Par2+0x0f; // 1111
-                      if (temp < 8) {
-                         if(GetArgv(string,str,4)) {  // Het door de gebruiker ingegeven derde parameter bevat het on/off commando
-                            event->Par1=str2cmd(str);
-                            if (event->Par1==VALUE_OFF) { 
-                                event->Par2=event->Par2|1;
-                            }
-                            success=true;
-                         }
-                      }
-                   }
-                }
-            }
-        }
-        free(str);
-        break;
-      }
-    #endif //MMI 
-    }      
     return success;
 }
+      
+boolean PluginTX_005(byte function, char *string) {
+    //10;EURODOMEST;03696b;0;ON;
+    //012345678901234567890123456
+    boolean success=false;
+    #ifdef PLUGIN_TX_005_CORE
+        if (strncasecmp(InputBuffer_Serial+3,"EURODOMEST;",11) == 0) { // KAKU Command eg. 
+           unsigned long bitstream=0L;
+           if (InputBuffer_Serial[20] != ';') return success;
+           if (InputBuffer_Serial[22] != ';') return success;
+          
+           InputBuffer_Serial[12]=0x30;
+           InputBuffer_Serial[13]=0x78;
+           InputBuffer_Serial[20]=0x00;
+           bitstream=str2int(InputBuffer_Serial+12);// Address
+           InputBuffer_Serial[22]=0x00;
+           byte temp=str2int(InputBuffer_Serial+21);// Button number
+           bitstream=(bitstream) << 4;
+           if (temp == 1) bitstream=bitstream+0x02; // 0010
+           if (temp == 2) bitstream=bitstream+0x04; // 0100
+           if (temp == 3) bitstream=bitstream+0x08; // 1000
+           if (temp == 6) bitstream=bitstream+0x0d; // 1101
+           if (temp == 7) bitstream=bitstream+0x0f; // 1111
+           if (temp > 7) {
+              return success;
+           }
+           byte command=0;
+           command = str2cmd(InputBuffer_Serial+23);
+           if (command == VALUE_OFF) {
+              bitstream=bitstream|1;
+           }
+           Eurodomest_Send(bitstream);              // the full bitstream to send
+           success=true;
+        }
+    #endif //PLUGIN_CORE_005
+    return success;
+}
+
           
 void Eurodomest_Send(unsigned long address) { 
     int fpulse = 296;                               // Pulse witdh in microseconds
@@ -174,7 +169,7 @@ void Eurodomest_Send(unsigned long address) {
 
     digitalWrite(PIN_RF_RX_VCC,LOW);                // Turn off power to the RF receiver 
     digitalWrite(PIN_RF_TX_VCC,HIGH);               // Enable the 433Mhz transmitter
-    delay(TRANSMITTER_STABLE_TIME);                 // Short delay to get the transmitter stable
+    delayMicroseconds(TRANSMITTER_STABLE_DELAY);    // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
 
     for (int nRepeat = 0; nRepeat <= fretrans; nRepeat++) {
         fsendbuff=address;
@@ -201,7 +196,8 @@ void Eurodomest_Send(unsigned long address) {
         digitalWrite(PIN_RF_TX_DATA, LOW);          // and lower the signal
         delayMicroseconds(fpulse * 32);
     }
-    delay(TRANSMITTER_STABLE_TIME);                 // Short delay to keep the air clean after the stop bit
+    delayMicroseconds(TRANSMITTER_STABLE_DELAY);    // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
     digitalWrite(PIN_RF_TX_VCC,LOW);                // Turn thew 433Mhz transmitter off
     digitalWrite(PIN_RF_RX_VCC,HIGH);               // Turn the 433Mhz receiver on
+    RFLinkHW();
 }

@@ -12,9 +12,6 @@
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!
  ***********************************************************************************************
- * Incoming event: "NewKaku     <adres>,<On|Off|AllOn|AllOff|Dimlevel 1..15>
- * Send          : "NewKakuSend <adres>,<On|Off|AllOn|AllOff|Dimlevel 1..15> 
- ***********************************************************************************************
  * Pulse (T) is 275us PDM
  * 0 = T,T,T,4T, 1 = T,4T,T,T, dim = T,T,T,T op bit 27
  *
@@ -25,54 +22,37 @@
  *
  *  NewKAKU bitstream= (First sent) AAAAAAAAAAAAAAAAAAAAAAAAAACCUUUU(LLLL) -> A=KAKU_address, C=command, U=KAKU-Unit, L=extra dimlevel bits (optional)
  *
- * Internal use of the paramters in the Nodo event: 
- * 
- * Cmd  : contains the command SendNewKAKU or the event NewKAKU. Unused.
- * Par1 : Command VALUE_ON, VALUE_OFF or dim level [0..15]
- * Par2 : Address
- *
  * Sample RF packet:
  * 20;B8;NewKaku;ID=00c142;SWITCH=1;CMD=OFF;
  * 20;B9;DEBUG;Pulses=132;Pulses(uSec)=200,2550,150,200,125,1200,150,200,150,1200,125,1200,150,225,125,1200,125,225,125,200,150,1200,150,200,150,1200,150,1200,125,200,125,200,125,1225,125,1200,125,225,150,200,150,1200,150,1200,150,200,150,1200,150,225,125,200,150,1200,125,200,150,1200,125,200,150,1200,150,200,125,1225,150,200,125,1200,150,1200,125,225,125,200,125,1200,150,1200,125,225,125,200,125,1225,125,200,125,1225,125,200,125,1200,125,200,150,1225,125,1200,150,200,125,200,125,1200,125,200,150,1200,125,200,125,1200,150,200,125,1200,125,200,125,1200,150,200,125,1200,150,200,150,1200,125;
  * 20;06;DEBUG;Pulses=132;Pulses(uSec)=175,2575,150,200,150,1200,150,200,150,1200,150,1200,150,200,125,1200,150,200,125,200,150,1200,125,200,150,1200,150,1200,150,200,150,200,150,1225,150,1200,125,225,150,200,125,1200,150,1200,150,200,150,1200,150,200,150,200,125,1225,125,200,150,1200,125,200,150,1200,125,200,150,1200,150,200,150,1200,150,1200,125,200,150,200,125,1200,150,1200,125,225,150,200,125,1200,150,200,150,1200,150,200,150,1200,150,200,150,1225,125,1200,150,200,125,200,150,1200,150,200,125,1200,150,200,150,1200,150,200,150,1200,150,200,125,1225,125,200,125,1200,150,200,150,1200,150
  \*********************************************************************************************/
-#define PLUGIN_ID 4
-#define PLUGIN_004_EVENT       "NewKAKU"
-#define PLUGIN_004_COMMAND "NewKAKUSend"
 #define NewKAKU_RawSignalLength      132        // regular KAKU packet length
 #define NewKAKUdim_RawSignalLength   148        // KAKU packet length including DIM bits
-#define NewKAKU_1T                   275        // us
-#define NewKAKU_mT                   650        // us, ergens ongeveer midden tussen 1T en 4T 
-#define NewKAKU_4T                  1100        // us
-#define NewKAKU_8T                  2200        // us, Tijd van de space na de startbit
+#define NewKAKU_1T                   225        // 275        // us
+#define NewKAKU_mT                   650        //            // us, approx. in between 1T and 4T 
+#define NewKAKU_4T                  1225        // 1100       // us
+#define NewKAKU_8T                  2600        // 2200       // us, Duration of the space after the start bit
 
-boolean Plugin_004(byte function, struct NodoEventStruct *event, char *string)
-  {
+boolean Plugin_004(byte function, char *string) {
   boolean success=false;
   
-  switch(function)
-    {
     #ifdef PLUGIN_004_CORE
-    case PLUGIN_RAWSIGNAL_IN:
-      {
-      unsigned long bitstream=0L;
+      // nieuwe KAKU bestaat altijd uit start bit + 32 bits + evt 4 dim bits. Ongelijk, dan geen NewKAKU
+      if ( (RawSignal.Number != NewKAKU_RawSignalLength) && (RawSignal.Number != NewKAKUdim_RawSignalLength) ) return false;
       boolean Bit;
       int i;
       int P0,P1,P2,P3;
-      event->Par1=0;
-      char buffer[14]=""; 
+      byte dim=0;
+      unsigned long bitstream=0L;
       
-      // nieuwe KAKU bestaat altijd uit start bit + 32 bits + evt 4 dim bits. Ongelijk, dan geen NewKAKU
-      //if (RawSignal.Number==NewKAKU_RawSignalLength || RawSignal.Number==NewKAKUdim_RawSignalLength || RawSignal.Number==(NewKAKU_RawSignalLength-2) || RawSignal.Number==(NewKAKUdim_RawSignalLength-2) )
-      if (RawSignal.Number==NewKAKU_RawSignalLength || RawSignal.Number==NewKAKUdim_RawSignalLength )
-        {
-        // RawSignal.Number bevat aantal pulsRawSignal.Multiplyen * 2  => negeren
-        // RawSignal.Pulses[1] bevat startbit met tijdsduur van 1T => negeren
-        // RawSignal.Pulses[2] bevat lange space na startbit met tijdsduur van 8T => negeren
-        i=3; // RawSignal.Pulses[3] is de eerste van een T,xT,T,xT combinatie
-        //if ( RawSignal.Number==(NewKAKU_RawSignalLength-2) || RawSignal.Number==(NewKAKUdim_RawSignalLength-2) ) i=1;
+      // RawSignal.Number bevat aantal pulsRawSignal.Multiplyen * 2  => negeren
+      // RawSignal.Pulses[1] bevat startbit met tijdsduur van 1T => negeren
+      // RawSignal.Pulses[2] bevat lange space na startbit met tijdsduur van 8T => negeren
+      i=3; // RawSignal.Pulses[3] is de eerste van een T,xT,T,xT combinatie
+      //if ( RawSignal.Number==(NewKAKU_RawSignalLength-2) || RawSignal.Number==(NewKAKUdim_RawSignalLength-2) ) i=1;
 
-        do {
+      do {
           P0=RawSignal.Pulses[i]    * RawSignal.Multiply;
           P1=RawSignal.Pulses[i+1]  * RawSignal.Multiply;
           P2=RawSignal.Pulses[i+2]  * RawSignal.Multiply;
@@ -99,147 +79,141 @@ boolean Plugin_004(byte function, struct NodoEventStruct *event, char *string)
           if(i<130) {                                              // alle bits die tot de 32-bit pulstrein behoren 32bits * 4posities per bit + pulse/space voor startbit
             bitstream=(bitstream<<1) | Bit;
           } else {                                                 // de resterende vier bits die tot het dimlevel behoren 
-            event->Par1=(event->Par1<<1) | Bit;
+            dim=(dim<<1) | Bit;
           }       
           i+=4;                                                    // volgende pulsenquartet
-        } while(i<RawSignal.Number-2);                             //-2 omdat de space/pulse van de stopbit geen deel meer van signaal uit maakt.
-        byte hibyte=(bitstream)>> 22;
-        // ----------------------------------
-        // Output
-        // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++);           // Node and packet number 
-        Serial.print( buffer );
-        // ----------------------------------
-        Serial.print("NewKaku;");                                  // Label
-        sprintf(buffer, "ID=%02x%04x;",hibyte, (((bitstream) >> 6) & 0xffff) );   // ID    
-        Serial.print( buffer );
-        sprintf(buffer, "SWITCH=%d;", ((bitstream)&0x0f)+1 );     
-        Serial.print( buffer );
-        Serial.print("CMD=");                    
+      } while(i<RawSignal.Number-2);                             //-2 omdat de space/pulse van de stopbit geen deel meer van signaal uit maakt.
+      //==================================================================================
+      // Prevent repeating signals from showing up
+      //==================================================================================
+      if(SignalHash!=SignalHashPrevious || (RepeatingTimer+700<millis() ) || SignalCRC != bitstream ) { // 1000
+         // not seen the RF packet recently
+         SignalCRC=bitstream;
+      } else {
+         // already seen the RF packet recently
+         //Serial.println("Skip");
+         return true;
+      } 
+      //==================================================================================
+      // Output
+      // ----------------------------------
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++);           // Node and packet number 
+      Serial.print( pbuffer );
+      // ----------------------------------
+      Serial.print(F("NewKaku;"));                               // Label
+      sprintf(pbuffer, "ID=%06lx;",((bitstream) >> 6) );   // ID   
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "SWITCH=%d;", ((bitstream)&0x0f)+1 );     
+      Serial.print( pbuffer );
+      Serial.print(F("CMD="));                    
 
-        int command = (bitstream >> 4) & 0x03;
-        if (command > 1) command ++;
-        if (i>140) {                                                 // Commando en Dim deel
-            sprintf(buffer, "SET_LEVEL=%d;", event->Par1 );     
-            Serial.print( buffer );
-        } else {
-            if ( command == 0 ) Serial.print("OFF;");
-            if ( command == 1 ) Serial.print("ON;");
-            if ( command == 3 ) Serial.print("ALLOFF;");
-            if ( command == 4 ) Serial.print("ALLON;");
-        }
-        Serial.println();
-        // ----------------------------------
-        RawSignal.Repeats    = true;                               // het is een herhalend signaal. Bij ontvangst herhalingen onderdrukken.
-        success=true;
-        }   
-      break;
+      int command = (bitstream >> 4) & 0x03;
+      if (command > 1) command ++;
+      if (i>140) {                                               // Commando en Dim deel
+          sprintf(pbuffer, "SET_LEVEL=%d;", dim );     
+          Serial.print( pbuffer );
+      } else {
+          if ( command == 0 ) Serial.print(F("OFF;"));
+          if ( command == 1 ) Serial.print(F("ON;"));
+          if ( command == 3 ) Serial.print(F("ALLOFF;"));
+          if ( command == 4 ) Serial.print(F("ALLON;"));
       }
-      
-    case PLUGIN_COMMAND:
-      {
-      unsigned long bitstream=0L;
-      byte i=1;
-      byte x;                                                      // aantal posities voor pulsen/spaces in RawSignal
-        
-      // bouw het KAKU adres op. Er zijn twee mogelijkheden: Een adres door de gebruiker opgegeven binnen het bereik van 0..255 of een lange hex-waarde
-      if(event->Par2<=255)
-        bitstream=1|(event->Par2<<6);                              // Door gebruiker gekozen adres uit de Nodo_code toevoegen aan adres deel van de KAKU code. 
-      else
-        bitstream=event->Par2 & 0xFFFFFFCF;                        // adres geheel over nemen behalve de twee bits 5 en 6 die het schakel commando bevatten.
-    
-      event->Port=VALUE_ALL;                                       // Signaal mag naar alle door de gebruiker met [Output] ingestelde poorten worden verzonden.
-      RawSignal.Repeats=7;                                         // Aantal herhalingen van het signaal.
-      RawSignal.Delay=20;                                          // Tussen iedere pulsenreeks enige tijd rust.
-      RawSignal.Multiply=25;
-
-      if(event->Par1==VALUE_ON || event->Par1==VALUE_OFF)
-        {
-        bitstream|=(event->Par1==VALUE_ON)<<4;                     // bit-5 is het on/off commando in KAKU signaal
-        x=130;                                                     // verzend startbit + 32-bits = 130
-        }
-      else
-        x=146;                                                     // verzend startbit + 32-bits = 130 + 4dimbits = 146
-     
-      // bitstream bevat nu de KAKU-bits die verzonden moeten worden.
-      for(i=3;i<=x;i++)RawSignal.Pulses[i]=NewKAKU_1T/RawSignal.Multiply;  // De meeste tijden in signaal zijn T. Vul alle pulstijden met deze waarde. Later worden de 4T waarden op hun plek gezet
-      
-      i=1;
-      RawSignal.Pulses[i++]=NewKAKU_1T/RawSignal.Multiply;         // pulse van de startbit
-      RawSignal.Pulses[i++]=NewKAKU_8T/RawSignal.Multiply;         // space na de startbit
-      
-      byte y=31;                                                   // bit uit de bitstream
-      while(i<x)
-        {
-        if((bitstream>>(y--))&1)
-          RawSignal.Pulses[i+1]=NewKAKU_4T/RawSignal.Multiply;     // Bit=1; // T,4T,T,T
-        else
-          RawSignal.Pulses[i+3]=NewKAKU_4T/RawSignal.Multiply;     // Bit=0; // T,T,T,4T
-    
-        if(x==146)                                                 // als het een dim opdracht betreft
-          {
-          if(i==111)                                               // Plaats van de Commando-bit uit KAKU 
-            RawSignal.Pulses[i+3]=NewKAKU_1T/RawSignal.Multiply;   // moet een T,T,T,T zijn bij een dim commando.
-          if(i==127)                                               // als alle pulsen van de 32-bits weggeschreven zijn
-            {
-            bitstream=(unsigned long)event->Par1;                  //  nog vier extra dim-bits om te verzenden. 
-            y=3;
-            }
-          }
-        i+=4;
-        }
-      RawSignal.Pulses[i++]=NewKAKU_1T/RawSignal.Multiply;         // pulse van de stopbit
-      RawSignal.Pulses[i]=0;                                       // space van de stopbit
-      RawSignal.Number=i;                                          // aantal bits*2 die zich in het opgebouwde RawSignal bevinden
-      //SendEvent(event,true,true,Settings.WaitFree==VALUE_ON);
-      SendEvent(event,true,true,Settings.WaitFree==VALUE_OFF);     // priority to transmit
+      Serial.println();
+      // ----------------------------------
+      RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
+      RawSignal.Number=0;
       success=true;
-      break;
-      }
     #endif // CORE
-      
-    #if NODO_MEGA
-    case PLUGIN_MMI_IN:
-      {
-      char* str=(char*)malloc(INPUT_COMMAND_SIZE);
-    
-      if(GetArgv(string,str,1))
-        {
-        event->Type=0;
-
-        if(strcasecmp(str,PLUGIN_004_COMMAND)==0)
-          event->Type=NODO_TYPE_PLUGIN_COMMAND;
-        
-        if(event->Type)
-          {
-          if(GetArgv(string,str,2))
-            {
-            event->Par2=str2int(str); 
-            if(GetArgv(string,str,3)) {
-              // Vul Par1 met het KAKU commando. Dit kan zijn: VALUE_ON, VALUE_OFF, 1..16. Andere waarden zijn ongeldig.
-              
-              // haal uit de tweede parameter een 'On' of een 'Off'.
-              if(strcasecmp(str,"ON")==0) {
-                event->Par1=VALUE_ON;
-                success=true;
-              } else 
-              if(strcasecmp(str,"OFF")==0) {
-                event->Par1=VALUE_OFF;
-                success=true;
-              } else {                                             // als dit niet is gelukt, dan uit de tweede parameter de dimwaarde halen.
-                event->Par1=str2int(str);                          // zet string om in integer waarde
-                if(event->Par1>=0 && event->Par1<=15)              // geldig dim bereik 0..15 ?
-                   success=true;
-                }
-              event->Command = PLUGIN_ID;                          // Plugin nummer  
-              }
-            }
-          }
-        }
-      free(str);
-      break;
-      }
-    #endif //MMI
-    }      
   return success;
-  }
+}
+
+boolean PluginTX_004(byte function, char *string) {
+  boolean success=false;
+   
+    #ifdef PLUGIN_TX_004_CORE
+        //10;NewKaku;123456;3;ON;                   // ON, OFF, ALLON, ALLOFF, ALL 99, 99      
+        //01234567890123456789012
+        // Hier aangekomen bevat string het volledige commando. Test als eerste of het opgegeven commando overeen komt
+        if (strncasecmp(InputBuffer_Serial+3,"NEWKAKU;",8) == 0) { // KAKU Command eg. Kaku;A1;On
+           if (InputBuffer_Serial[17] != ';') return success;
+           if (InputBuffer_Serial[19] != ';') return success;
+           
+           unsigned long bitstream=0L;
+           unsigned long tempaddress=0L;
+           byte cmd=0;
+           byte c=0;
+           byte x=18;                               // teller die wijst naar het te behandelen teken
+           byte Address=0;                          // Address 1..16
+            
+           InputBuffer_Serial[ 9]=0x30;
+           InputBuffer_Serial[10]=0x78;                            // Get address from hexadecimal value 
+           InputBuffer_Serial[17]=0x00;                            // Get address from hexadecimal value 
+           tempaddress=str2int(InputBuffer_Serial+9);              // NewKAKU address
+
+           while((c=InputBuffer_Serial[x++])!=';'){                // Address: 1 to 16
+              if(c>='0' && c<='9'){Address=Address*10;Address=Address+c-'0';}
+           }
+           if (Address > 16) {
+              return success;
+           }
+           Address--;                               // 1 to 16 -> 0 to 15
+           tempaddress=(tempaddress <<6) + Address;
+
+           cmd=str2cmd(InputBuffer_Serial+x);                      // Get ON/OFF etc. command
+           if (cmd == false) {                      // Not a valid command received? ON/OFF/ALLON/ALLOFF
+              cmd=str2int(InputBuffer_Serial+20);                  // get DIM value
+           }
+           // --------------- NEWKAKU SEND ------------
+           //unsigned long bitstream=0L;
+           byte i=1;
+           x=0;                                                         // aantal posities voor pulsen/spaces in RawSignal
+        
+           // bouw het KAKU adres op. Er zijn twee mogelijkheden: Een adres door de gebruiker opgegeven binnen het bereik van 0..255 of een lange hex-waarde
+           if (tempaddress<=255)
+              bitstream=1|(tempaddress<<6);                             // Door gebruiker gekozen adres uit de Nodo_code toevoegen aan adres deel van de KAKU code. 
+           else
+              bitstream=tempaddress & 0xFFFFFFCF;                       // adres geheel over nemen behalve de twee bits 5 en 6 die het schakel commando bevatten.
+    
+           RawSignal.Repeats=7;                                         // Aantal herhalingen van het signaal.
+           RawSignal.Delay=20;                                          // Tussen iedere pulsenreeks enige tijd rust.
+
+           if (cmd == VALUE_ON || cmd == VALUE_OFF) {
+              bitstream|=(cmd == VALUE_ON)<<4;                          // bit-5 is het on/off commando in KAKU signaal
+              x=130;                                                    // verzend startbit + 32-bits = 130
+           } else
+              x=146;                                                    // verzend startbit + 32-bits = 130 + 4dimbits = 146
+     
+           // bitstream bevat nu de KAKU-bits die verzonden moeten worden.
+           for(i=3;i<=x;i++)RawSignal.Pulses[i]=NewKAKU_1T/RawSignal.Multiply;  // De meeste tijden in signaal zijn T. Vul alle pulstijden met deze waarde. Later worden de 4T waarden op hun plek gezet
+      
+           i=1;
+           RawSignal.Pulses[i++]=NewKAKU_1T/RawSignal.Multiply;         // pulse van de startbit
+           RawSignal.Pulses[i++]=NewKAKU_8T/RawSignal.Multiply;         // space na de startbit
+      
+           byte y=31;                                                   // bit uit de bitstream
+           while(i<x) {
+             if ((bitstream>>(y--))&1)
+                RawSignal.Pulses[i+1]=NewKAKU_4T/RawSignal.Multiply;    // Bit=1; // T,4T,T,T
+             else
+                RawSignal.Pulses[i+3]=NewKAKU_4T/RawSignal.Multiply;    // Bit=0; // T,T,T,4T
+    
+             if (x==146) {                                              // als het een dim opdracht betreft
+                if (i==111)                                             // Plaats van de Commando-bit uit KAKU 
+                   RawSignal.Pulses[i+3]=NewKAKU_1T/RawSignal.Multiply; // moet een T,T,T,T zijn bij een dim commando.
+                if (i==127) {                                           // als alle pulsen van de 32-bits weggeschreven zijn
+                   bitstream=(unsigned long)cmd;                        //  nog vier extra dim-bits om te verzenden. 
+                   y=3;
+                }
+             }
+             i+=4;
+           }
+           RawSignal.Pulses[i++]=NewKAKU_1T/RawSignal.Multiply;         // pulse van de stopbit
+           RawSignal.Pulses[i]=0;                                       // space van de stopbit
+           RawSignal.Number=i;                                          // aantal bits*2 die zich in het opgebouwde RawSignal bevinden
+           RawSendRF();
+           success=true;
+        }
+        // --------------------------------------
+    #endif // CORE
+  return success;
+}

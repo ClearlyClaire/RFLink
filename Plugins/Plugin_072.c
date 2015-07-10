@@ -13,198 +13,132 @@
  * Changelog: v1.0 initial release
  *********************************************************************************************
  * Technical information:
+ * 26 pulses, manchester code, 12 bits
  *
- * Complete signal:
- * 101010101010100110101001
- * ID               Ringtone
- * 1010101010101001|10101001
+ * 111111110001
+ * AAAAAAAABBBB
  *
- * Converting from pulses to bits taking every second pulse as bit value:
- * 1010101001101010
- *  0 0 0 0 1 0 0 0| 0 0 0 1   =>  ID=0x08 Tone=1
+ * A = 8 bit Address  
+ * B = chime number    
+ *     Valid chime numbers: 1,2,6,9,a,c,d,e ?
  * ---------------------------------------------------------
- * PULSEVALUES:
- * -----------
- * ID's:                            Ringtones:
- * 1010101001101010                 10101001   169   aa6a 43626
- * 1010101010011001                 10100110   166
- * 0101101010101010                 10010110   150
- * 1001011001010101                 01010110   86
- * 0101101010101010                 01101001   105
- * 0110101001101001                 01011001   89
- * 1001101010101001                 01011010   90
- * 1010011001101010                 01100110   102
- *      ^^^^
- * 0123456789012345                 67890123
- * ---------------------------------------------------------
- * BITVALUES:
- * ---------
- * ID's:                         Ringtones:                       ?  ?
- * 00001000      0x08            0001   0x01     000(1) = 0   
- * 00000101      0x05            0010   0x02     001(0) = 1
- * 11000000      0xC0            0110   0x06     011(0) = 3 
- * 01101111      0x6F            1110   0x0E     111(0) = 7
- * 00000001      0x01            1001   0x09     100(1) = 4
- * 10001001      0x89            1101   0x0D     110(1) = 6
- * 01000001      0x41            1100   0x0C     110(0) = 6
- * 00101000      0x28            1010   0x0A     101(0) = 5
- *    ^
- * 01234567                      8901
+ * 20;25;DEBUG;Pulses=26;Pulses(uSec)=275,250,250,525,250,225,250,525,250,225,250,525,525,225,250,525,525,225,250,225,250,225,250,525,525;
+ * 20;F0;DEBUG;Pulses=511;Pulses(uSec)=450,225,575,200,575,225,575,200,575,200,575,200,575,225,575,550,250,200,575,200,575,200,575,550,250,2825,250,200,575,200,575,200,575,225,575,200,575,200,575,200,575,550,250,200,575,200,575,200,575,525,250,2825,250,200,575,200,575,200,575,225,575,200,575,200,575,200,575,550,250,225,575,200,575,225,575,550,250,2825,250,200,575,200,575,200,575,200,575,200,575,200,575,200,575,550,250,200,575,225,575,200,575,550,250,2850,250,200,575,200,575,200,575,200,575,200,575,200,575,200,575,550,250,225,575,200,575,200,575,550,250,2850,225,225,575,200,575,225,575,200,575,200,575,200,575,200,575,550,250,225,575,200,575,200,575,525,250,2825,250,225,575,200,575,200,575,200,575,200,575,200,575,200,575,550,250,200,575,200,575,225,575,525,250,2825,250,225,575,225,575,200,575,200,575,200,575,225,575,200,575,550,250,200,575,200,575,200,575,550,250,2825,250,200,575,200,575,200,575,225,575,225,575,200,575,200,575,550,250,200,575,200,575,200,575,525,250,2825,250,200,575,200,575,200,575,200,575,200,575,200,575,200,575,550,250,225,575,200,575,225,575,550,250,2825,250,200,575,200,575,200,575,200,575,200,575,225,575,200,575,550,250,200,575,225,575,200,575,550,250,2850,250,200,575,200,575,200,575,200,575,200,575,200,575,200,575,550,250,225,575,225,575,200,575,550,250,2850,250,200,575,200,575,225,575,200,575,200,575,200,575,200,575,550,250,225,575,200,575,200,575,550,250,2825,250,200,575,200,575,200,575,200,575,225,575,200,575,200,575,550,250,200,575,200,575,225,575,550,250,2825,250,200,575,225,575,200,575,200,575,200,575,225,575,200,575,525,250,200,575,200,575,200,575,550,250,2825,250,200,575,225,575,200,575,200,575,200,575,225,575,200,575,550,250,200,575,200,575,200,575,525,250,2825,250,200,575,200,575,225,575,200,575,200,575,200,575,225,575,550,250,200,575,225,575,225,575,525,250,2825,250,200,575,200,575,200,575,200,575,225,575,200,575,225,575,550,250,225,575,200,575,225,575,550,250,2825,250,200,575,200,575,200,575,200,575,200,575,200,575,225,575,525,250,225,575,200,575,225,575,550,250,2850,225,225,575,200,575,225,575,200,575,200,575,200,575,200,575,525;
+ * 20;31;DEBUG;Pulses=511;Pulses(uSec)=450,550,250,550,250,550,250,550,250,525,250,525,250,550,250,550,250,225,575,200,575,200,575,550,250,2825,250,550,250,550,250,550,250,550,250,550,250,550,250,525,250,525,250,200,575,225,575,200,575,550,250,2825,250,525,250,550,250,550,250,550,250,550,250,550,250,550,250,550,250,200,575,200,575,200,575,525,250,2825,250,550,250,550,250,525,250,550,250,550,250,550,250,550,250,550,250,200,575,200,575,200,575,525,250,2825,250,550,250,525,250,525,250,525,250,550,250,550,250,550,250,550,250,225,575,200,575,200,575,525,250,2825,250,550,250,525,250,525,250,525,250,525,250,550,250,550,250,550,250,200,575,200,575,225,575,550,250,2825,225,550,250,525,250,525,250,550,250,550,250,525,250,525,250,525,250,225,575,200,575,225,575,550,250,2850,250,550,250,550,250,550,250,525,250,525,250,525,250,550,250,550,250,225,575,200,575,225,575,550,250,2850,225,550,250,550,250,550,250,550,250,525,250,525,250,525,250,550,250,200,575,200,575,200,575,525,250,2825,250,550,250,550,250,550,250,550,250,550,250,550,250,525,250,525,250,200,575,200,575,200,575,550,250,2825,250,525,250,550,250,550,250,550,250,550,250,550,250,550,250,550,250,200,575,200,575,200,575,550,250,2825,250,550,250,525,250,525,250,525,250,550,250,550,250,550,250,550,250,200,575,200,575,200,575,525,250,2825,250,550,250,550,250,550,250,525,250,550,250,550,250,550,250,550,250,200,575,200,575,225,575,525,250,2825,250,550,250,550,250,525,250,525,250,550,250,550,250,525,250,525,250,200,575,225,575,225,575,550,250,2850,250,550,250,550,250,525,250,525,250,525,250,550,250,550,250,550,250,200,575,225,575,200,575,550,250,2850,250,550,250,550,250,550,250,550,250,525,250,525,250,550,250,550,250,225,575,225,575,200,575,550,250,2825,250,550,250,550,250,550,250,550,250,550,250,550,250,550,250,525,250,200,575,200,575,200,575,550,250,2825,250,525,250,550,250,550,250,550,250,550,250,550,250,550,250,525,250,200,575,200,575,200,575,550,250,2825,250,525,250,550,250,550,250,550,250,550,250,550,250,550,250,550,250,200,575,200,575,200,575,525,250,2825,250,550,250,550,250,525,250,525,250,525,250,550,250,550,250,550;
+ * 20;25;DEBUG;Pulses=26;Pulses(uSec)=250,550,250,550,250,550,250,550,250,550,250,550,250,525,250,525,250,200,575,225,575,200,575,550,250;
  \*********************************************************************************************/
 #define PLUGIN_ID 72
-#define PLUGIN_NAME "Byron"
-#define PLUGIN_072_EVENT        "Byron"
-#define PLUGIN_072_COMMAND  "ByronSend"
 #define BYRON_PULSECOUNT 26
 
-#define BYRONSTART                 100
+#define BYRONSTART                 3000
 #define BYRONSPACE                 250
 #define BYRONLOW                   350
 #define BYRONHIGH                  675
 
-boolean Plugin_072(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_072(byte function, char *string){
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_072_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
       //==================================================================================
-      byte basevar=0;
-      unsigned long bitstream0=0;                     // holds first 16 bits
-      unsigned long bitstream1=0;                     // holds the 4 bits for checksum
-      unsigned long bitstream2=0;                     // holds last 8 bits
-      byte checksum=0;
-      byte bitcounter=0;                              // counts number of received bits (converted from pulses)
-      char buffer[14]=""; 
+      unsigned long bitstream=0L;                    
 
       if (RawSignal.Number !=BYRON_PULSECOUNT) return false;
-      //==================================================================================
-      // get bytes 
       if (RawSignal.Pulses[0] != PLUGIN_ID) return false; // only accept plugin1 translated packets
-      for(byte x=0;x<RawSignal.Number-1;x++) {
-         if (RawSignal.Pulses[x]*RawSignal.Multiply < 425) {
-            if ((bitcounter < 9) && (bitcounter > 4)) {
-               bitstream0 = (bitstream0 << 1);        // only need from bit 5 to 8 to do the checksum
-               bitstream1 = (bitstream1 << 1);
-               bitcounter++;
-            } else if (bitcounter < 17) {
-               bitstream1 = (bitstream1 << 1);
-               bitcounter++;                     
-            } else {
-               bitstream2 = (bitstream2 << 1);        // this should give the ringtone
-            }
-         } else {
-            if ((bitcounter < 9) && (bitcounter > 4)) {
-               bitstream0 = (bitstream0 << 1) | 0x1;  // only need from bit 5 to 8 to do the checksum
-               bitstream1 = (bitstream1 << 1) | 0x1;
-               bitcounter++;
-            } else if (bitcounter < 17) {
-               bitstream1 = (bitstream1 << 1) | 0x1;
-               bitcounter++;
-            } else {
-               bitstream2 = (bitstream2 << 1) | 0x1;  // this should give the ringtone
-            }
-         }
+      if (RawSignal.Pulses[1]*RawSignal.Multiply > 425) return false; // first pulse is start bit and must be short
+      //==================================================================================
+      for(byte x=2;x < BYRON_PULSECOUNT-1;x=x+2) {
+         if (RawSignal.Pulses[x]*RawSignal.Multiply < 350) {                  // 200-275 (150-350 is accepted)
+            if (RawSignal.Pulses[x]*RawSignal.Multiply < 150) return false;   // pulse too short
+            if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 350) return false; // bad manchester code
+            bitstream = (bitstream << 1);
+         } else {                                                             // 500-575 (450-650 is accepted)
+            if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 450) return false; // bad manchester code
+            if (RawSignal.Pulses[x]*RawSignal.Multiply < 450) return false;   // pulse too short
+            if (RawSignal.Pulses[x]*RawSignal.Multiply > 650) return false;   // pulse too long
+            bitstream = (bitstream << 1) | 0x1;
+         }         
       }
       //==================================================================================
-      // all bytes received, make sure checksum is okay
+      // Prevent repeating signals from showing up
       //==================================================================================
-      checksum = bitstream0;                          // Second block
-      if ((checksum != 0xA) && (checksum != 0x6))  return false; // Should be '1010' => 0xA or '0110' => 0x6
-      //==================================================================================
-      // Serial.print(" CRC=");
-      // Serial.print(bitstream0,HEX);
-      // Serial.print(" ID=");
-      // Serial.print(bitstream1,HEX);
-      // Serial.print(" Ring=");
-      // Serial.println(bitstream2,HEX);
-      // Serial.print(bitstream1,BIN);
-      // Serial.println(bitstream2,BIN);
+      if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer+1000<millis()) ){ 
+         // not seen the RF packet recently
+         if (bitstream == 0) return false;            // sanity check
+      } else {
+         // already seen the RF packet recently
+         return true;
+      }
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++);// Node and packet number 
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++);// Node and packet number 
+      Serial.print( pbuffer );
       // ----------------------------------
-      Serial.print("Byron SX;");                         // Label
-      sprintf(buffer, "ID=%04x;", bitstream1);        // ID      
-      Serial.print( buffer );
-      Serial.print("SWITCH=1;CMD=ON;");  
-      sprintf(buffer, "CHIME=%02x;", bitstream2);     // chime number
-      Serial.print( buffer );
+      Serial.print(F("Byron SX;"));                       // Label
+      sprintf(pbuffer, "ID=%04x;", ((bitstream)>>4)&0xff);// ID      
+      Serial.print( pbuffer );
+      Serial.print(F("SWITCH=1;CMD=ON;"));  
+      sprintf(pbuffer, "CHIME=%02x;", (bitstream)&0xf);   // chime number
+      Serial.print( pbuffer );
       Serial.println();
       //==================================================================================
-      //event->Par1=bitstream2;
-      //event->Par2=bitstream1;
-      //event->SourceUnit    = 0;                     // Komt niet van een Nodo unit af, dus unit op nul zetten
-      //event->Port          = VALUE_SOURCE_RF;
-      //event->Type          = NODO_TYPE_PLUGIN_EVENT;
-      //event->Command       = 72; // Nummer van dit device
-      //==================================================================================
-      RawSignal.Repeats=true;                         // suppress RF signal repeats
+      RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
       RawSignal.Number=0;
       success=true;
-      break;
-    }      //einde ontvangen
-    
-   case PLUGIN_COMMAND:
-    {
-        unsigned long bitstream1=event->Par2;       // address
-        unsigned long bitstream=event->Par1;        // ringtone
-        
-        RawSignal.Multiply=50;
-        RawSignal.Repeats=30;
-        RawSignal.Delay=20;
-        RawSignal.Pulses[1]=BYRONLOW/RawSignal.Multiply;
-        for (byte x=17;x>=2;x=x-1) {
-            if ((bitstream1 & 1) == 1) 
-               RawSignal.Pulses[x] = BYRONHIGH/RawSignal.Multiply;
-            else 
-               RawSignal.Pulses[x] = BYRONLOW/RawSignal.Multiply;
-            bitstream1 = bitstream1 >> 1;
-        }
-        for (byte x=25;x>=18;x=x-1) {
-            if ((bitstream & 1) == 1) 
-               RawSignal.Pulses[x] = BYRONHIGH/RawSignal.Multiply;
-            else 
-               RawSignal.Pulses[x] = BYRONLOW/RawSignal.Multiply;
-            bitstream = bitstream >> 1;
-        }
-        RawSignal.Pulses[26]=BYRONSTART/RawSignal.Multiply;
-        RawSignal.Number=26;
-        RawSendRF();
-        success=true;
-        break;
-    }
 #endif // PLUGIN_072_CORE
+  return success;
+}
 
-#if NODO_MEGA
-  case PLUGIN_MMI_IN:
-      {
-        char *str=(char*)malloc(INPUT_COMMAND_SIZE);
-        if(GetArgv(string,str,1)) {
-            event->Type  = 0;
-            if(strcasecmp(str,PLUGIN_072_COMMAND)==0) {
-                event->Type  = NODO_TYPE_PLUGIN_COMMAND;
-            }
-            if(event->Type) {
-                event->Command = 72;                // Plugin nummer  
-                if(GetArgv(string,str,2)) {         // Het door de gebruiker ingegeven eerste parameter bevat het adres
-                   event->Par2=str2int(str); 
-                   if(GetArgv(string,str,3)) {      // Het door de gebruiker ingegeven tweede parameter bevat het ringtone nummer
-                     event->Par1=str2int(str); 
-                     success=true;
-                   }
-                }
-            }
-        }
-        free(str);
-        break;
-      }
-#endif //NODO_MEGA
-  }      
+boolean PluginTX_072(byte function, char *string) {
+  boolean success=false;
+      #ifdef PLUGIN_TX_072_CORE
+       //10;BYRON;112233;01;OFF;
+       //01234567890123456789012
+       if (strncasecmp(InputBuffer_Serial+3,"BYRON;",5) == 0) { // KAKU Command eg. 
+          if (InputBuffer_Serial[15] != ';') return success;
+      
+          InputBuffer_Serial[9]='0';
+          InputBuffer_Serial[10]='x';
+          InputBuffer_Serial[15]=0;
+          unsigned int tempbyte1=0;
+          tempbyte1=str2int(InputBuffer_Serial+9);  // get parameter 1
+          
+          int tempbyte2=0;
+          InputBuffer_Serial[14]='0';
+          InputBuffer_Serial[15]='x';
+          InputBuffer_Serial[18]=0;
+          tempbyte2=str2int(InputBuffer_Serial+14);  // get parameter 2
+          //-----------------------------------------------
+          unsigned long bitstream1=tempbyte1;       // address
+          unsigned long bitstream=tempbyte2;        // ringtone
+        
+          RawSignal.Multiply=50;
+          RawSignal.Repeats=20;
+          RawSignal.Delay=3;  // 1 = 900 3=2825  5=  6= x
+          RawSignal.Pulses[1]=BYRONLOW/RawSignal.Multiply;
+          //RawSignal.Pulses[1]=BYRONSTART/RawSignal.Multiply;
+          for (byte x=17;x>=2;x=x-1) {
+              if ((bitstream1 & 1) == 1) 
+                 RawSignal.Pulses[x] = BYRONHIGH/RawSignal.Multiply;
+              else 
+                 RawSignal.Pulses[x] = BYRONLOW/RawSignal.Multiply;
+              bitstream1 = bitstream1 >> 1;
+          }
+          for (byte x=25;x>=18;x=x-1) {
+              if ((bitstream & 1) == 1) 
+                 RawSignal.Pulses[x] = BYRONHIGH/RawSignal.Multiply;
+              else 
+                 RawSignal.Pulses[x] = BYRONLOW/RawSignal.Multiply;
+              bitstream = bitstream >> 1;
+          }
+          //RawSignal.Pulses[26]=BYRONSTART/RawSignal.Multiply;
+          RawSignal.Pulses[26]=BYRONSPACE/RawSignal.Multiply;
+          RawSignal.Number=26;
+          RawSendRF();
+          RawSignal.Multiply=25;
+          success=true;        
+          //-----------------------------------------------
+       }
+  #endif // PLUGIN_072_CORE
   return success;
 }

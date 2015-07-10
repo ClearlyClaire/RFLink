@@ -3,7 +3,7 @@
 //##                                      Plugin-15: HomeEasy EU                                       ##
 //#######################################################################################################
 /*********************************************************************************************\
- * Dit protocol zorgt voor ontvangst HomeEasy EU zenders
+ * Dit protocol zorgt voor ontvangst en verzending HomeEasy EU zenders
  * die werken volgens de automatische codering (Ontvangers met leer-knop)
  *
  * LET OP: GEEN SUPPORT VOOR DIRECTE DIMWAARDES!!!
@@ -20,45 +20,9 @@
  * Only tested with Home Easy HE300WEU transmitter, doorsensor and PIR sensor
  * Home Easy message structure, by analyzing bitpatterns so far ...
  * AAAAAAAAAAA BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB CCCC DD EE FFFFFF G
-   11000111100 10111100011101110010001111100011 1100 10 11 000111 1  HE301EU ON
-   11000111100 10111100011101110010001111100011 1100 01 11 000111 1  HE301EU OFF
-   11000111100 10111101001101011011001011011100 1011 10 01 000111 1  HE300EU 1:ON, Switch:I 
-   11000111100 10111101001101011011001011011100 1011 01 01 000111 1  HE300EU 1:OFF, Switch:I 
-   11000111100 10111101001101011011001011011100 1011 10 01 010011 1  HE300EU1:ON, Switch:II	
-   11000111100 10111011010100011110110101100011 1011 10 01 000111 1 #channel 0 on               10001110
-   11000111100 10111011010100011110110101100011 1011 01 01 000111 1 #channel 0 off   0000
-   11000111100 10111011010100011110110101100011 1011 10 01 001011 1 #channel 1 on
-   11000111100 10111011010100011110110101100011 1011 01 01 001011 1 #channel 1 off   0001
-   11000111100 10111011010100011110110101100011 1011 10 01 001101 1 #channel 2 on    
-   11000111100 10111011010100011110110101100011 1011 01 01 001101 1 #channel 2 off   0010
-   11000111100 10111011010100011110110101100011 1011 01 01 001110 1 #channel 3 off   0011
-   11000111100 10111011010100011110110101100011 1011 01 01 010011 1 #channel 4 off   0100
-   11000111100 10111011010100011110110101100011 1011 01 01 010101 1 #channel 5 off   0101
-   11000111100 10111011010100011110110101100011 1011 01 01 001100 1 #channel 15 off  1111     11011000 
-   11000111100 10111011010100011110110101100011 1011 01 01 001010 1 #channel 14 off  1110
-   11000111100 10111101001101011011001011011100 1100 10 11 000111 1 HE300EUGroup:ON,Switch:IV
-   11000111100 10111101001101011011001011011100 1100 01 11 000111 1 HE300EUGroup:OFF,Switch:IV
-   11000111100 10111101001101011011001011011100 1011 01 01 101100 1 HE300EU4:OFF,Switch:IV
-   11000111100 10111011010100011110110101100011 1011 01 01 000101 1 #channel 11 off
-   
-   0B 11 01 08 00 00 80 40 03 01 0F 30 
-   20;11;HomeEasy;ID=7900b200;ID=79b2a5c3;SWITCH=0d;CMD=ALLOFF;
-   0B 11 01 0B 00 00 80 40 03 01 0F 40 
-   20;49;HomeEasy;ID=7900b200;ID=79b2a5c3;SWITCH=0d;CMD=ALLOFF;
-   
-   0B 11 01 15 00 00 80 40 03 00 00 40    
-   20;89;HomeEasy;ID=7900b200;ID=79b2a5c3;SWITCH=0d;CMD=ALLON;
-
-   0B 11 01 0F 00 00 80 40 02 00 00 30 
-   20;6F;HomeEasy;ID=7900b200;ID=79b2a5c3;SWITCH=0b;CMD=ALLON;
-   0B 11 01 10 00 00 80 40 02 01 0F 40 
-   20;7E;HomeEasy;ID=7900b200;ID=79b2a5c3;SWITCH=0b;CMD=ALLOFF;
-
-   10 11 10 11 01 01 00 01 11 10 11 01 01 10 00 11
-   
-   80       40
-   10000000 01000000
-   
+ * 11000111100 10111100011101110010001111100011 1100 10 11 000111 1  HE301EU ON
+ * 11000111100 10111100011101110010001111100011 1100 01 11 000111 1  HE301EU OFF
+ *  
  * A = Startbits/Preamble, 
  * B = Address, 32 bits
  * C = Unknown, Possibly: Device type 
@@ -66,17 +30,15 @@
  * E = Group indicator
  * F = Channel  0-15
  * G = Stopbit
- 
+ *
  * SAMPLE:
  * Pulses=116;Pulses(uSec)=200,1175,125,1175,125,200,150,200,125,200,150,1175,150,1175,150,1175,150,1175,125,200,150,200,150,200,125,1175,150,1175,150,1175,125,1175,150,200,125,200,150,1175,125,1175,150,200,125,1175,125,1175,150,200,150,200,150,1175,150,200,150,1175,150,200,150,1175,150,200,150,200,125,1175,150,200,125,1175,150,1175,125,1175,150,200,125,200,125,200,150,200,125,1175,150,1175,150,1175,150,200,150,200,125,200,150,1175,150,1175,150,1175,150,1175,125,200,150,200,125,1175,125,200,125,1175,150,1150,125;
  * HE preamble: 11000111100 (63C) Address: 1111001101100101010010111000011 (79B2A5C3) Stopbits: 0 (0) Commands: 10001111001011 Command: 0 Channel: 1011 Group: 1
  * 20;04;HomeEasy;ID=7900b200;SWITCH=0b;CMD=ALLOFF;
- 
-   HE preamble: 11000111100 (63C) Address: 1111001101100101010010111000011 (79B2A5C3) Stopbits: 0 (0) Commands: 10010111001011 Command: 0 Channel: 1011 Group: 1
-
-Preamble 200,1175,125,1175,125,200,150,200,125,200,150,1175,150,1175,150,1175,150,1175,125,200,150,200,
-Address  150,200,125,1175,150,1175,150,1175,125,1175,150,200,125,200,150,1175,125,1175,150,200,125,1175,125,1175,150,200,150,200,150,1175,150,200,150,1175,150,200,150,1175,150,200,150,200,125,1175,150,200,125,1175,150,1175,125,1175,150,200,125,200,125,200,150,200,125,1175,150,1175,
-Command  150,1175,150,200,150,200,125,200,150,1175,150,1175,150,1175,150,1175,125,200,150,200,125,1175,125,200,125,1175,150,1150,  - 125;
+ *
+ * Preamble 200,1175,125,1175,125,200,150,200,125,200,150,1175,150,1175,150,1175,150,1175,125,200,150,200,
+ * Address  150,200,125,1175,150,1175,150,1175,125,1175,150,200,125,200,150,1175,125,1175,150,200,125,1175,125,1175,150,200,150,200,150,1175,150,200,150,1175,150,200,150,1175,150,200,150,200,125,1175,150,200,125,1175,150,1175,125,1175,150,200,125,200,125,200,150,200,125,1175,150,1175,
+ * Command  150,1175,150,200,150,200,125,200,150,1175,150,1175,150,1175,150,1175,125,200,150,200,125,1175,125,200,125,1175,150,1150,  - 125;
  \*********************************************************************************************/
  
 #define HomeEasy_LongLow        0x490    // us
@@ -84,166 +46,187 @@ Command  150,1175,150,200,150,200,125,200,150,1175,150,1175,150,1175,150,1175,12
 #define HomeEasy_ShortLow       150      // us
 #define HomeEasy_PulseLength    116
 
-#define PLUGIN_ID 15
-#define PLUGIN_NAME "HomeEasy"
-
-boolean Plugin_015(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_015(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
   #ifdef PLUGIN_015_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
-      unsigned long preamble = 0;
-      unsigned long address = 0;
-      unsigned long bitstream = 0;
-      unsigned long stopbits = 0;
-      int counter = 0;
-      byte rfbit =0;
-      byte command = 0;
-      byte group = 0;
-      unsigned long channel = 0;
-      char buffer[14]=""; 
-      
       //==================================================================================
       // valid messages are 116 pulses          
       if (RawSignal.Number != HomeEasy_PulseLength) return false;
+      unsigned long preamble = 0L;
+      unsigned long address = 0L;
+      unsigned long bitstream = 0L;
+      byte rfbit =0;
+      byte command = 0;
+      byte group = 0;
+      byte channel = 0;
+      
       // convert pulses into bit sections (preamble, address, bitstream)
-      for(byte x=1;x<=RawSignal.Number;x=x+2) {
+      for(byte x=1;x<=HomeEasy_PulseLength;x=x+2) {
          if ((RawSignal.Pulses[x]*RawSignal.Multiply < 500) & (RawSignal.Pulses[x+1]*RawSignal.Multiply > 500)) 
             rfbit = 1;
          else
             rfbit = 0;
             
-         if (x<=22) preamble = (preamble << 1) | rfbit;
-         if ((x>=23) && (x<=86)) address = (address << 1) | rfbit;
-         if ((x>=87) && (x<=114)) bitstream = (bitstream << 1) | rfbit;
+         if (x<=22) preamble = (preamble << 1) | rfbit;              // 11 bits preamble
+         if ((x>=23) && (x<=86)) address = (address << 1) | rfbit;   // 32 bits address
+         if ((x>=87) && (x<=114)) bitstream = (bitstream << 1) | rfbit; // 15 remaining bits
       }
       //==================================================================================
       // To prevent false positives make sure the preamble is correct, 
       // it should always be 0x63c but we compare only 10 bits to compensate for the first bit being seen incorrectly 
       if ( (preamble & 0x3ff) != 0x23c) {          // comparing 10 bits is enough to make sure the packet is valid
-         //Serial.println("HE preamble error:");   
-         //Serial.println(preamble,HEX);    
          return false;        
       }
+      //==================================================================================
+      // Prevent repeating signals from showing up
+      //==================================================================================
+      if(SignalHash!=SignalHashPrevious || (RepeatingTimer<millis() && SignalCRC != bitstream) || SignalCRC != bitstream ) { 
+         // not seen the RF packet recently
+         SignalCRC=bitstream;
+      } else {
+         // already seen the RF packet recently
+         return true;
+      }       
       //==================================================================================
       command = ((bitstream >> 9) & 0x1);      // 1=off 0=on ?
       channel = (bitstream) & 0x3f;
       group = ((bitstream >> 7) & 0x1);        // 1=group 
-      byte hibyte=(address)>> 24;
-      byte hibyte2=(address)>> 16;
-      // -------------------------
-      /*
-      Serial.print("HE: ");    
-      Serial.print(address,HEX);    
-      Serial.print(" Commands: ");    
-      Serial.print(bitstream, BIN);    
-      Serial.print(" Command: ");    
-      Serial.print(command);    
-      Serial.print(" Channel: ");    
-      Serial.print(channel,BIN);    
-      Serial.print(" Group: ");    
-      Serial.println(group );    
-      */
-      // Add channel info to base address, first shift channel info 6 positions, so it can't interfere with bit 5
-      //channel = channel << 6;
-      //address = address + channel;
-      //Serial.print(" ");    
-      //Serial.print(channel);    
-      //Serial.print(" ");    
-      //Serial.println(address);    
       // ----------------------------------
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+      Serial.print( pbuffer );
       // ----------------------------------
       Serial.print("HomeEasy;");                  // Label
-      sprintf(buffer, "ID=%02x%02x%04x;", (hibyte)&0xff  ,(hibyte2)&0xff,(address&0xffff) ); // ID    
-      Serial.print( buffer );
-      sprintf(buffer, "SWITCH=%02x;", channel);     
-      Serial.print( buffer );
-      Serial.print("CMD=");                    
+      sprintf(pbuffer, "ID=%08lx;",(address) );   // ID   
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "SWITCH=%02x;", channel);     
+      Serial.print( pbuffer );
+      strcpy(pbuffer,"CMD=");
       if ( group == 1) {
-         Serial.print("ALL");
+         strcat(pbuffer,"ALL");
       }
       if ( command == 0) {
-         Serial.print("OFF;");
+         strcat(pbuffer,"OFF;");
       } else {
-         Serial.print("ON;");
+         strcat(pbuffer,"ON;");
       }
+      Serial.print( pbuffer );
       Serial.println();     
       // ----------------------------------
-      //event->Par1=command?VALUE_ON:VALUE_OFF; // On/Off bit omzetten naar een Nodo waarde. 
-      //event->Par2=address &0xFFFFFFCF; 
-      //event->SourceUnit    = 0;                     // Komt niet van een Nodo unit af, dus unit op nul zetten
-      //event->Type          = NODO_TYPE_PLUGIN_EVENT;
-      //event->Command       = 15; // Nummer van dit device
       RawSignal.Repeats    = true; // het is een herhalend signaal. Bij ontvangst herhalingen onderdrukken.
       success=true;
-      break;
-    }
-
 #endif // PLUGIN_015_CORE
+  return success;
+}
 
-#if NODO_MEGA
-  case PLUGIN_MMI_IN:
-    {
-    char* str=(char*)malloc(INPUT_COMMAND_SIZE);
+boolean PluginTX_015(byte function, char *string) {
+  boolean success=false;
+  unsigned long bitstream = 0L;
+  unsigned long preamble = 0L;
+      #ifdef PLUGIN_TX_015_CORE
 
-    if(GetArgv(string,str,1))
-      {
-      if(strcasecmp(str,PLUGIN_NAME)==0)
-        {
-        if(GetArgv(string,str,2))
-          {
-          event->Par2=str2int(str);    
-          if(GetArgv(string,str,3))
-            {
-            // Vul Par1 met het HomeEasy commando. Dit kan zijn: VALUE_ON, VALUE_OFF, Andere waarden zijn ongeldig.
+        //10;HomeEasy;7900b200;b;ON;
+        //10;HomeEasy;d900ba00;23;OFF;
+        //10;HomeEasy;79b2a5c3;b;ON;
+        //01234567890123456789012345  
+        if (strncasecmp(InputBuffer_Serial+3,"HOMEEASY;",9) == 0) { // KAKU Command eg. 
+           if (InputBuffer_Serial[20] != ';') return success;
+           byte cmd=0;
+           byte group=0;
+           InputBuffer_Serial[10]=0x30;
+           InputBuffer_Serial[11]=0x78;                            // Get home from hexadecimal value 
+           InputBuffer_Serial[20]=0x00;                            // Get home from hexadecimal value 
+           bitstream=str2int(InputBuffer_Serial+10);               // Address
+           if (InputBuffer_Serial[23] == ';') {
+              cmd=str2cmd(InputBuffer_Serial+24);
+           } else {
+              cmd=str2cmd(InputBuffer_Serial+23);
+           }
+           if (cmd == VALUE_OFF)    cmd = 0;   // off
+           if (cmd == VALUE_ON)     cmd = 1;   // on
+           if (cmd == VALUE_ALLON) {cmd = 1; group=1;}   // allon
+           if (cmd == VALUE_ALLOFF){cmd = 0; group=1;}   // alloff
+           // ------------------------------
+           byte address = 0;
+           byte channel = 0;
+           byte channelcode = 0;
+           byte command = 0;
+           byte i=1; // bitcounter in stream
+           byte y; // size of partial bitstreams
+           // ------------------------------
+           address = (bitstream >> 4) & 0x7;      // 3 bits address (higher bits from HomeEasy address, bit 7 not used
+           channel = bitstream & 0xF;             // 4 bits channel (lower bits from HomeEasy address
+           command = cmd & 0xF;                   // 1 = on, 0 = off
+           // ------------------------------
+           if (channel == 0) channelcode = 0x8E;
+           else if (channel == 1) channelcode = 0x96;
+           else if (channel == 2) channelcode = 0x9A;
+           else if (channel == 3) channelcode = 0x9C;
+           else if (channel == 4) channelcode = 0xA6;
+           else if (channel == 5) channelcode = 0xAA;
+           else if (channel == 6) channelcode = 0xAC;
+           else if (channel == 7) channelcode = 0xB2;
+           else if (channel == 8) channelcode = 0xB4;
+           else if (channel == 9) channelcode = 0xB8;
+           else if (channel == 10) channelcode = 0xC6;
+           else if (channel == 11) channelcode = 0xCA;
+           else if (channel == 12) channelcode = 0xCC;
+           else if (channel == 13) channelcode = 0xD2;
+           else if (channel == 14) channelcode = 0xD4;
+           else if (channel == 15) channelcode = 0xD8;
+           //--------------- HOME EASY TRANSMIT ------------
+           RawSignal.Multiply=50;
+           // Startbits / Preamble
+           y=11; // bit position from the preamble
+           preamble = 0x63C;
+           for (i=1;i<=22;i=i+2) {
+               RawSignal.Pulses[i] = HomeEasy_ShortHigh/RawSignal.Multiply;
+               if((preamble>>(y-1))&1)          // bit 1
+                  RawSignal.Pulses[i+1] = HomeEasy_LongLow/RawSignal.Multiply;
+               else                              // bit 0
+                  RawSignal.Pulses[i+1] = HomeEasy_ShortLow/RawSignal.Multiply;
+               y--;
+           }
+           // ------------------------------
+           // Address 
+           y=32; // bit position from the bitstream
+           //bitstream = 0xDAB8F56C + address;
+           for (i=23;i<=86;i=i+2) {
+               RawSignal.Pulses[i] = HomeEasy_ShortHigh/RawSignal.Multiply;
+               if((bitstream>>(y-1))&1)          // bit 1
+                  RawSignal.Pulses[i+1] = HomeEasy_LongLow/RawSignal.Multiply;
+               else                              // bit 0
+                  RawSignal.Pulses[i+1] = HomeEasy_ShortLow/RawSignal.Multiply;
+               y--;
+           }
+           // ------------------------------
+           // Commands etc.
+           y=15; // bit position from the bitstream
+           bitstream = 0x5C00;  // bit 10 on, bit 11 off indien OFF
+           if (cmd==0) bitstream = 0x5A00;  // cmd = off  
+           if (group==1) bitstream = bitstream | 0xc0; // group on/off
+           bitstream = bitstream + channelcode;
 
-            // haal uit de tweede parameter een 'On' of een 'Off'.
-            if(event->Par1=str2cmd(str))
-              {
-              event->Type  = NODO_TYPE_PLUGIN_EVENT;
-              event->Command = 15; // Plugin nummer                
-              success=true;
-              }
-            }
-          }
+           for (i=87;i<=116;i=i+2) {
+               RawSignal.Pulses[i] = HomeEasy_ShortHigh/RawSignal.Multiply;
+               if((bitstream>>(y-1))&1)          // bit 1
+                  RawSignal.Pulses[i+1] = HomeEasy_LongLow/RawSignal.Multiply;
+               else                              // bit 0
+                  RawSignal.Pulses[i+1] = HomeEasy_ShortLow/RawSignal.Multiply;
+               y--;
+           }
+
+           RawSignal.Pulses[116]=0;
+           RawSignal.Number=116;                    // aantal bits*2 die zich in het opgebouwde RawSignal bevinden  unsigned long bitstream=0L;
+           RawSignal.Repeats=5;                     // vijf herhalingen.
+           RawSignal.Delay=20;                      // Tussen iedere pulsenreeks enige tijd rust.
+           RawSendRF();
+           RawSignal.Multiply=25;
+           //-----------------------------------------------
+           success=true;
         }
-      }
-    free(str);
-    break;
-    }
-/*
-  case PLUGIN_MMI_OUT:
-    {
-    strcpy(string,PLUGIN_NAME);            // Eerste argument=het commando deel
-    strcat(string," ");
-
-    // In Par3 twee mogelijkheden: Het bevat een door gebruiker ingegeven adres 0..255 of een volledig HomeEasy adres.
-    if(event->Par2>=0x0ff)
-      strcat(string,int2strhex(event->Par2)); 
-    else
-      strcat(string,int2str(event->Par2)); 
-
-    strcat(string,",");
-
-    if(event->Par1==VALUE_ON)
-      strcat(string,"On");  
-    else if(event->Par1==VALUE_OFF)
-      strcat(string,"Off");
-    else
-      strcat(string,int2str(event->Par1));
-
-    break;
-    }
-    */
-#endif //NODO_MEGA
-  }      
+  #endif // PLUGIN_015_CORE
   return success;
 }

@@ -41,35 +41,23 @@
  * 20;10;DEBUG;Pulses=68;Pulses(uSec)=3300,4225,400,375,400,1350,400,1350,400,1325,400,375,400,375,400,375,400,375,400,1325,400,375,400,375,400,375,400,1325,400,1325,400,1325,400,1325,400,375,400,375,400,1325,400,1350,400,1350,400,375,400,375,400,375,375,1350,400,1350,400,375,400,375,400,375,400,1325,400,1350,400,1325,400;
  * 20;20;DEBUG;Pulses=66;Pulses(uSec)=425,350,375,1300,375,1300,375,1350,375,375,375,1350,375,375,375,375,375,1350,375,375,375,375,375,375,400,1350,375,375,400,1350,375,1350,400,1325,400,375,400,375,400,375,400,375,400,375,400,375,400,375,400,375,400,1325,400,1325,400,1325,400,1325,400,1325,400,1350,375,1350,375;
  \*********************************************************************************************/
-#define PLUGIN_ID 9
-
 #define X10_PulseLength         66
-#define PLUGIN_009_EVENT        "X10"
-#define PLUGIN_009_COMMAND      "X10Send"
 
 void X10_Send(uint32_t address);
 
-boolean Plugin_009(byte function, struct NodoEventStruct *event, char *string)
-  {
+boolean Plugin_009(byte function, char *string) {
     boolean success=false;
-    unsigned long bitstream=0;
+    unsigned long bitstream=0L;
   
-  switch(function)
-    {
     #ifdef PLUGIN_009_CORE
-
-    case PLUGIN_RAWSIGNAL_IN:
-      {
-      int i,j;
       byte housecode=0;
       byte unitcode=0;
       byte command=0;
-      char buffer[14]=""; 
 	  byte data[4]; 
       byte start=0;
       // ==========================================================================
       if ( (RawSignal.Number != (X10_PulseLength )) && (RawSignal.Number != (X10_PulseLength+2)) ) return false; 
-      if (RawSignal.Number == 68) {
+      if (RawSignal.Number == X10_PulseLength+2) {
          if ( (RawSignal.Pulses[1]*RawSignal.Multiply > 3000) && (RawSignal.Pulses[2]*RawSignal.Multiply > 3000) ) {
             start=2;
          } else {
@@ -85,16 +73,25 @@ boolean Plugin_009(byte function, struct NodoEventStruct *event, char *string)
          }
       }
       //==================================================================================
+      // Prevent repeating signals from showing up
+      //==================================================================================
+      if(SignalHash!=SignalHashPrevious || RepeatingTimer<millis()) { 
+         // not seen the RF packet recently
+         if (bitstream == 0) return false;          // sanity check
+      } else {
+         // already seen the RF packet recently
+         return true;
+      }      
+      //==================================================================================
       // order received data
       data[0]=((bitstream)>>24)&0xff;
       data[1]=((bitstream)>>16)&0xff;
       data[2]=((bitstream)>>8)&0xff;
       data[3]=(bitstream)&0xff;
-
-	  data[1]=data[1]^0xff;
-	  data[3]=data[3]^0xff;
       // ----------------------------------
       // perform sanity checks
+	  data[1]=data[1]^0xff;
+	  data[3]=data[3]^0xff;
       if (data[0] != data[1]) return false;
       if (data[2] != data[3]) return false;
       // ----------------------------------
@@ -149,166 +146,161 @@ boolean Plugin_009(byte function, struct NodoEventStruct *event, char *string)
       // ----------------------------------
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+      Serial.print( pbuffer );
       // ----------------------------------
-      Serial.print("X10;");                         // Label
-      sprintf(buffer, "ID=%02x;", 0x41+housecode);  // ID    
-      Serial.print( buffer );
-      sprintf(buffer, "SWITCH=%d;", unitcode);   
-      Serial.print( buffer );
-      Serial.print("CMD=");                    
+      Serial.print(F("X10;"));                         // Label
+      sprintf(pbuffer, "ID=%02x;", 0x41+housecode);  // ID    
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "SWITCH=%d;", unitcode);   
+      Serial.print( pbuffer );
+      Serial.print(F("CMD="));                    
       if ( command == 0) {
-         Serial.print("OFF;");
+         Serial.print(F("OFF;"));
       } else 
       if ( command == 1) {
-         Serial.print("ON;");
+         Serial.print(F("ON;"));
       } else 
       if ( command == 2) {
-         Serial.print("BRIGHT;");
+         Serial.print(F("BRIGHT;"));
       } else 
       if ( command == 3) {
-         Serial.print("DIM;");
+         Serial.print(F("DIM;"));
       } else 
       if ( command == 4) {
-         Serial.print("ALLOFF;");
+         Serial.print(F("ALLOFF;"));
       } else 
       if ( command == 5) {
-         Serial.print("ALLON;");
+         Serial.print(F("ALLON;"));
       }
       Serial.println();
       // ----------------------------------
-      RawSignal.Repeats    = true;                  // het is een herhalend signaal. Bij ontvangst herhalingen onderdrukken.
+      RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
       RawSignal.Number=0; 
       success=true;
-      break;
-      }
-    case PLUGIN_COMMAND:
-      {
-      event->Port=VALUE_ALL;                        // Signaal mag naar alle door de gebruiker met [Output] ingestelde poorten worden verzonden.
-      X10_Send(event->Par2);                        // event->Par2 contains the full bitstream to send
-      success=true;
-      break;
-    }
     #endif //PLUGIN_CORE_009
-      
-    #if NODO_MEGA
-    case PLUGIN_MMI_IN:
-      {
-      char *TempStr=(char*)malloc(INPUT_COMMAND_SIZE);
-      if(GetArgv(string,TempStr,1)) {
-        event->Type  = 0;
-        
-        if(strcasecmp(TempStr,PLUGIN_009_COMMAND)==0) {
-          event->Type  = NODO_TYPE_PLUGIN_COMMAND;
-        }
-
-        if(event->Type) {
-          byte c;
-          byte x=0;                                 // teller die wijst naar het te behandelen teken
-          byte Home=0;                              // home A..P
-          byte Address=0;                           // unit 1..16
-          byte command=0;
-          event->Command = PLUGIN_ID;               // Plugin nummer  
-          uint32_t newadd=0;
-        
-          if (GetArgv(string,TempStr,2)) {          // contains adres according to A1..P16 
-             while((c=tolower(TempStr[x++]))!=0) {
-                  if(c>='0' && c<='9'){Address=Address*10;Address=Address+c-'0';}
-                  if(c>='a' && c<='p'){Home=c-'a';} // home A is intern 0
-             }
-
-             if (GetArgv(string,TempStr,3)) {       // Het door de gebruiker ingegeven tweede parameter bevat het on/off commando
-                if (Home == 0) event->Par1 = 0x60;  
-                if (Home == 1) event->Par1 = 0x70;  
-                if (Home == 2) event->Par1 = 0x40;  
-                if (Home == 3) event->Par1 = 0x50;  
-                if (Home == 4) event->Par1 = 0x80;  
-                if (Home == 5) event->Par1 = 0x90;  
-                if (Home == 6) event->Par1 = 0xa0;  
-                if (Home == 7) event->Par1 = 0xb0;  
-                if (Home == 8) event->Par1 = 0xe0;  
-                if (Home == 9) event->Par1 = 0xf0;  
-                if (Home ==10) event->Par1 = 0xc0;  
-                if (Home ==11) event->Par1 = 0xd0;  
-                if (Home ==12) event->Par1 = 0x00;  
-                if (Home ==13) event->Par1 = 0x10;  
-                if (Home ==14) event->Par1 = 0x20;  
-                if (Home ==15) event->Par1 = 0x30;  
-                if (Address > 7) { 
-                   event->Par1 = event->Par1 + 4;
-                   Address=Address-8;
-                }
-                // ---------------
-                Home=str2cmd(TempStr);
-                if (Home == 0) {                    // DIM/BRIGHT command
-                    if (strcasecmp(TempStr,"DIM")==0) { 
-                       command=3;
-                    } else
-                    if (strcasecmp(TempStr,"BRIGHT")==0) { 
-                       command=2;
-                    } 
-                    event->Par1 = event->Par1 + 4;
-                } else {
-                    if (Home==VALUE_ON) { 
-                       command=1;
-                    } else
-                    if (Home==VALUE_OFF) { 
-                       command=0;
-                    } else
-                    if (Home==VALUE_ALLOFF) { 
-                       command=4;
-                       event->Par1 = event->Par1 + 4;
-                    } else
-                    if (Home==VALUE_ALLON) { 
-                       command=5;
-                       event->Par1 = event->Par1 + 4;
-                    } 
-                }
-                if (Address == 1 && command == 1) event->Par2=0x00; 
-                if (Address == 1 && command == 0) event->Par2=0x20; 
-                if (Address == 2 && command == 1) event->Par2=0x10; 
-                if (Address == 2 && command == 0) event->Par2=0x30; 
-                if (Address == 3 && command == 1) event->Par2=0x08; 
-                if (Address == 3 && command == 0) event->Par2=0x28; 
-                if (Address == 4 && command == 1) event->Par2=0x18; 
-                if (Address == 4 && command == 0) event->Par2=0x38; 
-                if (Address == 5 && command == 1) event->Par2=0x40; 
-                if (Address == 5 && command == 0) event->Par2=0x60; 
-                if (Address == 6 && command == 1) event->Par2=0x50; 
-                if (Address == 6 && command == 0) event->Par2=0x70; 
-                if (Address == 7 && command == 1) event->Par2=0x48; 
-                if (Address == 7 && command == 0) event->Par2=0x68; 
-                if (Address == 8 && command == 1) event->Par2=0x58; 
-                if (Address == 8 && command == 0) event->Par2=0x78; 
-                if (command == 2) event->Par2=0x88; 
-                if (command == 3) event->Par2=0x98; 
-                if (command == 4) event->Par2=0x80; 
-                if (command == 5) event->Par2=0x90; 
-                success=true;
-                // -----------------------------
-                newadd=event->Par2 <<8;
-                event->Par2=event->Par2^0xff;
-                newadd=newadd+event->Par2;
-                event->Par2=event->Par1^0xff;
-                event->Par2=event->Par2<<16;
-                newadd=newadd+event->Par2;
-                event->Par2=event->Par1;
-                event->Par2=event->Par2<<24;
-                newadd=newadd+event->Par2;
-                event->Par2=newadd;
-              }
-            }
-          }
-        }
-      free(TempStr);
-      break;
-      }
-    #endif //MMI 
-    }      
     return success;
 }
 
+boolean PluginTX_009(byte function, char *string) {
+  boolean success=false;
+      
+        #ifdef PLUGIN_TX_009_CORE
+        //10;X10;000041;1;OFF;
+        //0123456789012345678
+        // Hier aangekomen bevat string het volledige commando. Test als eerste of het opgegeven commando overeen komt
+        if (strncasecmp(InputBuffer_Serial+3,"X10;",4) == 0) { // X10 Command eg. 
+           unsigned long bitstream=0L;
+           byte x=14;                               // teller die wijst naar het te behandelen teken
+           byte command=0;
+           byte Home=0;                             // Home A..P
+           byte Address=0;                          // Blyss subchannel 1..5
+           byte c;
+           uint32_t newadd=0;
+
+           InputBuffer_Serial[ 9]=0x30;
+           InputBuffer_Serial[10]=0x78;
+           InputBuffer_Serial[13]=0;
+           Home=str2int(InputBuffer_Serial+9);      // Home: A..P
+           if (Home < 0x51)                         // take care of upper/lower case
+              Home=Home - 'A';
+           else 
+              if (Home < 0x71)                      // take care of upper/lower case
+                 Home=Home - 'a';
+              else {
+                 return success;                    // invalid value
+              }
+           
+           while((c=tolower(InputBuffer_Serial[x++]))!=';'){       // Address: 1 to 16
+              if(c>='0' && c<='9'){Address=Address*10;Address=Address+c-'0';}
+           }
+           
+           if (Home == 0) c = 0x60;  
+           if (Home == 1) c = 0x70;  
+           if (Home == 2) c = 0x40;  
+           if (Home == 3) c = 0x50;  
+           if (Home == 4) c = 0x80;  
+           if (Home == 5) c = 0x90;  
+           if (Home == 6) c = 0xa0;  
+           if (Home == 7) c = 0xb0;  
+           if (Home == 8) c = 0xe0;  
+           if (Home == 9) c = 0xf0;  
+           if (Home ==10) c = 0xc0;  
+           if (Home ==11) c = 0xd0;  
+           if (Home ==12) c = 0x00;  
+           if (Home ==13) c = 0x10;  
+           if (Home ==14) c = 0x20;  
+           if (Home ==15) c = 0x30;  
+           if (Address > 7) { 
+              c = c + 4;
+              Address=Address-8;
+           }
+           // ---------------
+           Home=str2cmd(InputBuffer_Serial+x);
+           if (Home == 0) {                    // DIM/BRIGHT command
+              if (strcasecmp(InputBuffer_Serial+x,"DIM")==0) { 
+                 command=3;
+              } else
+              if (strcasecmp(InputBuffer_Serial+x,"BRIGHT")==0) { 
+                 command=2;
+              } 
+              c = c + 4;
+           } else {
+              if (Home==VALUE_ON) { 
+                 command=1;
+              } else
+              if (Home==VALUE_OFF) { 
+                 command=0;
+              } else
+              if (Home==VALUE_ALLOFF) { 
+                 command=4;
+                 c = c + 4;
+              } else
+              if (Home==VALUE_ALLON) { 
+                 command=5;
+                 c = c + 4;
+              } 
+           }
+           if (Address == 1 && command == 1) bitstream=0x00; 
+           if (Address == 1 && command == 0) bitstream=0x20; 
+           if (Address == 2 && command == 1) bitstream=0x10; 
+           if (Address == 2 && command == 0) bitstream=0x30; 
+           if (Address == 3 && command == 1) bitstream=0x08; 
+           if (Address == 3 && command == 0) bitstream=0x28; 
+           if (Address == 4 && command == 1) bitstream=0x18; 
+           if (Address == 4 && command == 0) bitstream=0x38; 
+           if (Address == 5 && command == 1) bitstream=0x40; 
+           if (Address == 5 && command == 0) bitstream=0x60; 
+           if (Address == 6 && command == 1) bitstream=0x50; 
+           if (Address == 6 && command == 0) bitstream=0x70; 
+           if (Address == 7 && command == 1) bitstream=0x48; 
+           if (Address == 7 && command == 0) bitstream=0x68; 
+           if (Address == 8 && command == 1) bitstream=0x58; 
+           if (Address == 8 && command == 0) bitstream=0x78; 
+           if (command == 2) bitstream=0x88; 
+           if (command == 3) bitstream=0x98; 
+           if (command == 4) bitstream=0x80; 
+           if (command == 5) bitstream=0x90; 
+           // -----------------------------
+           newadd=bitstream <<8;
+           bitstream=bitstream^0xff;
+           newadd=newadd+bitstream;
+           bitstream=c^0xff;
+           bitstream=bitstream<<16;
+           newadd=newadd+bitstream;
+           bitstream=c;
+           bitstream=bitstream<<24;
+           newadd=newadd+bitstream;
+           bitstream=newadd;
+           // -----------------------------
+           success=true;
+           X10_Send(bitstream);                        // full bitstream to send
+        }
+    #endif //PLUGIN_CORE_009
+    return success;
+}
+
+#ifdef PLUGIN_TX_009_CORE
 void X10_Send(uint32_t address) {
     int fpulse  = 375;                              // Pulse witdh in microseconds
     int fretrans = 4;                               // Number of code retransmissions
@@ -318,7 +310,7 @@ void X10_Send(uint32_t address) {
 
     digitalWrite(PIN_RF_RX_VCC,LOW);                // Disable RF receiver
     digitalWrite(PIN_RF_TX_VCC,HIGH);               // Enable RF transmitter
-    delay(TRANSMITTER_STABLE_TIME);                 // Short delay
+    delayMicroseconds(TRANSMITTER_STABLE_DELAY);    // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
     
     for (int nRepeat = 0; nRepeat <= fretrans; nRepeat++) {
         fsendbuff=address;
@@ -352,8 +344,10 @@ void X10_Send(uint32_t address) {
         digitalWrite(PIN_RF_TX_DATA, LOW);
         delayMicroseconds(fpulse * 20);
     }
-     delay(TRANSMITTER_STABLE_TIME);                // Short delay
-     digitalWrite(PIN_RF_TX_VCC,LOW);               // Disable RF transmitter
-     digitalWrite(PIN_RF_RX_VCC,HIGH);              // Enable RF receiver
-     return;
+    delayMicroseconds(TRANSMITTER_STABLE_DELAY);   // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
+    digitalWrite(PIN_RF_TX_VCC,LOW);               // Disable RF transmitter
+    digitalWrite(PIN_RF_RX_VCC,HIGH);              // Enable RF receiver
+    RFLinkHW();
+    return;
 }
+#endif //PLUGIN_CORE_009

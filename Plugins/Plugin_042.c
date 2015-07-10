@@ -70,28 +70,25 @@
  * Sample:
  * 20;64;DEBUG;Pulses=52;Pulses(uSec)=875,875,825,875,1725,1800,1725,1800,1725,850,825,1800,1725,875,800,850,825,1800,1725,1800,800,875,800,850,1725,1800,825,850,1725,850,825,1800,1725,1800,825,850,1725,875,800,1800,800,875,800,850,825,850,1725,1800,1750,1800,475;
  * 11000001 00110000 11100100 01100000 0010
+ *
+ *20;C3;DEBUG;Pulses=52;Pulses(uSec)=950,975,850,975,1850,1975,1875,1975,1850,975,850,1975,1850,975,850,975,850,2000,1850,975,875,975,850,975,850,2000,850,975,1850,2000,850,975,1850,2000,850,975,1875,975,850,975,850,975,850,2000,1850,1975,1850,2000,1850,1975,225;
+ *20;C4;DEBUG;Pulses=52;Pulses(uSec)=950,975,850,975,1850,2000,1875,2000,1850,975,850,2000,1850,975,850,975,850,2000,1850,975,875,950,875,975,850,2000,850,975,1850,2000,850,975,1850,2000,850,975,1875,975,850,975,850,975,850,2000,1850,2000,1850,2000,1850,2000,225;
+ *20;C5;DEBUG;Pulses=52;Pulses(uSec)=950,975,850,975,1850,2000,1875,2000,1850,975,850,2000,1850,975,850,975,850,2000,1850,975,875,975,850,975,850,1975,850,975,1850,1975,850,975,1850,2000,850,975,1875,975,850,975,850,975,850,2000,1850,2000,1850,2000,1850,2000,225;
+ *20;32;DEBUG;Pulses=48;Pulses(uSec)=850,900,875,900,1850,1875,1850,1875,1850,900,875,1875,1850,900,875,900,875,1875,1850,900,875,1875,1850,1875,1825,900,875,1875,875,900,1850,1875,875,900,875,900,1850,1875,1825,1875,1850,1875,1850,1875,1825,1875,500;
+ *20;33;UPM/Esic;ID=0001;TEMP=0104;HUM=33;BAT=OK;
  \*********************************************************************************************/
-#define PLUGIN_ID 42
-#define PLUGIN_NAME "UPM"
-
 #define UPM_MIN_PULSECOUNT 48
 #define UPM_MAX_PULSECOUNT 56
 
-boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_042(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_042_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
       if (RawSignal.Number < UPM_MIN_PULSECOUNT || RawSignal.Number > UPM_MAX_PULSECOUNT) return false; 
 
       byte rc=0;
-      byte basevar=0;
-      unsigned long bitstream1=0;                   // holds first 10 bits 
-      unsigned long bitstream2=0;                   // holds last 26 bits
+      unsigned long bitstream1=0L;                  // holds first 10 bits 
+      unsigned long bitstream2=0L;                  // holds last 26 bits
 
       int temperature=0;
       int humidity=0;
@@ -105,10 +102,9 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
       byte bitcounter=0;                            // counts number of received bits (converted from pulses)
       byte halfbit=0;                               // high pulse = 1, 2 low pulses = 0, halfbit keeps track of low pulses
       byte msgformat=0;
-      char buffer[14]=""; 
       //==================================================================================
-      for(byte x=1;x <RawSignal.Number;x++) {       // get bytes
-         if (RawSignal.Pulses[x]*RawSignal.Multiply > 1500 && RawSignal.Pulses[x]*RawSignal.Multiply < 2000) {
+      for(int x=1;x <RawSignal.Number;x++) {       // get bytes
+         if (RawSignal.Pulses[x]*RawSignal.Multiply > 1600 && RawSignal.Pulses[x]*RawSignal.Multiply < 2075) {
             if (halfbit==1) {                       // UPM cant receive a 1 bit after a single low value
                return false;                        // pulse error, must not be a UPM packet or reception error
             }
@@ -117,10 +113,11 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
                 bitcounter++;                       // only need to count the first 10 bits
             } else {
                 bitstream2 = (bitstream2 << 1);
+                bitcounter++;                       // only need to count the first 10 bits
             }
             halfbit=0;                              // wait for next first low or high pulse     
          } else {
-            if (RawSignal.Pulses[x]*RawSignal.Multiply > 1000 && RawSignal.Pulses[x]*RawSignal.Multiply < 500) return false; // Not a valid UPM pulse length
+            if (RawSignal.Pulses[x]*RawSignal.Multiply > 1100 && RawSignal.Pulses[x]*RawSignal.Multiply < 600) return false; // Not a valid UPM pulse length
             if (halfbit == 0) {                     // 2 times a low value = 0 bit
                halfbit=1;                           // first half received   
             } else {
@@ -129,46 +126,53 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
                   bitcounter++;                     // only need to count the first 10 bits
                } else {
                   bitstream2 = (bitstream2 << 1) | 0x1; 
+                  bitcounter++;                       // only need to count the first 10 bits
                }
                halfbit=0;                           // wait for next first low or high pulse     
             }
          }
+         if (bitcounter > 36) return false;         // too many bits, it cant be the right protocol
       }
       //==================================================================================
-      // first perform a check to make sure the packet is a valid UPM/Esic packet 
-      // by comparing the first 4 bits which are always? 1100
-      if ( (bitstream1 >> 6 ) != 0x0c ) return false;  
-      if ( bitstream1 == 0x00 ) return false;  
-      if ( bitstream2 == 0x00 ) return false;  
+      if ( (bitstream1 >> 6 ) != 0x0c ) return false; // sanity check, first 4 bits should always be '1100' to be a valid UPM/Esic packet
+      if ( bitstream1 == 0x00 ) return false; // sanity check
+      if ( bitstream2 == 0x00 ) return false; // sanity check 
       //==================================================================================
-      // perform a checksum check to make sure the packet is a valid UPM/Esic packet
-      // Checksum - xor all odd and all even bits should match the last two bits
-      for (byte i=0;i<9;i=i+2){ 
-          checksum=checksum ^ ((bitstream1 >> i) &3);
+      for (byte i=0;i<9;i=i+2){                  // perform a checksum check to make sure the packet is a valid UPM/Esic packet
+          checksum=checksum ^ ((bitstream1 >> i) &3); // Checksum - xor all odd and all even bits should match the last two bits
       }
       for (byte i=2;i<25;i=i+2){ 
           checksum=checksum ^ ((bitstream2 >> i) &3);
       }
-      if (checksum == (bitstream2 &3 )) {   // did the format 1 checksum calculation match?
-         msgformat=1;                       // Yes, set it
-      } else {                              // else perform a bit parity check to see if we have format 2
-         checksum=checksum ^ ((bitstream2) &3); // xor the last 2 bits
-         units = (checksum >> 1) & 0x01;    // get the odd bit of the checksum result
-         checksum=(checksum & 0x01) ^ units;// xor the odd with the even bit of the checksum result
-         if (checksum == 0) {               // did the format 2 parity checksum calculation match?
+      if (checksum == (bitstream2 &3 )) {        // did the format 1 checksum calculation match?
+         msgformat=1;                            // Yes, set it
+      } else {                                   // else perform a bit parity check to see if we have format 2
+         checksum=checksum ^ ((bitstream2) &3);  // xor the last 2 bits
+         units = (checksum >> 1) & 0x01;         // get the odd bit of the checksum result
+         checksum=(checksum & 0x01) ^ units;     // xor the odd with the even bit of the checksum result
+         if (checksum == 0) {                    // did the format 2 parity checksum calculation match?
              msgformat=2;
          } else {
              return false;
          }
       }
       //==================================================================================
+      // Prevent repeating signals from showing up
+      //==================================================================================
+      if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer+1000<millis() && SignalCRC != bitstream1) || (SignalCRC != bitstream1) ) { 
+         SignalCRC=bitstream1;
+         // not seen the RF packet recently
+      } else {
+         // already seen the RF packet recently
+         return true;
+      }
+      //==================================================================================
       // now process the various sensor types      
       //==================================================================================
-      // housecode
-      units=bitstream1 & 0x03;              // format 1&2
-      rc=units;                             // format 1&2
-      // devicecode
-      devicecode=(bitstream1 >> 2) & 0x0f;  // format 1&2
+      units=bitstream1 & 0x03;              // housecode format 1&2
+      rc=units;                             // housecode format 1&2
+      devicecode=(bitstream1 >> 2) & 0x0f;  // devicecode format 1&2
+      //==================================================================================
       if (msgformat==1) {
          battery = (bitstream2 >> 23) & 1;     // battery state 1=low 0=ok
          if (rc==10 && devicecode==2) {               // wind
@@ -179,19 +183,19 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
             //==================================================================================
             // Output
             // ----------------------------------
-            sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-            Serial.print( buffer );
-            Serial.print("UPM/Esic;");                       // Label
-            sprintf(buffer, "ID=%02x%02x;", rc, devicecode); // ID    
-            Serial.print( buffer );
-            sprintf(buffer, "WINSP=%02x;", winds);     
-            Serial.print( buffer );
-            sprintf(buffer, "WINDIR=%04x;", windd);     
-            Serial.print( buffer );
+            sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+            Serial.print( pbuffer );
+            Serial.print(F("UPM/Esic;"));                    // Label
+            sprintf(pbuffer, "ID=%02x%02x;", rc, devicecode); // ID    
+            Serial.print( pbuffer );
+            sprintf(pbuffer, "WINSP=%02x;", winds);     
+            Serial.print( pbuffer );
+            sprintf(pbuffer, "WINDIR=%04x;", windd);     
+            Serial.print( pbuffer );
             if (battery==1) {                                // battery status
-               Serial.print("BAT=LOW;");               
+               Serial.print(F("BAT=LOW;"));               
             } else {
-               Serial.print("BAT=OK;");                
+               Serial.print(F("BAT=OK;"));                
             }
             Serial.println();
             //==================================================================================
@@ -203,17 +207,17 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
             //==================================================================================
             // Output
             // ----------------------------------
-            sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-            Serial.print( buffer );
-            Serial.print("UPM/Esic;");              // Label
-            sprintf(buffer, "ID=%02x%02x;", rc, devicecode); // ID    
-            Serial.print( buffer );
-            sprintf(buffer, "RAIN=%04x;", rain);     
-            Serial.print( buffer );
+            sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+            Serial.print( pbuffer );
+            Serial.print(F("UPM/Esic;"));              // Label
+            sprintf(pbuffer, "ID=%02x%02x;", rc, devicecode); // ID    
+            Serial.print( pbuffer );
+            sprintf(pbuffer, "RAIN=%04x;", rain);     
+            Serial.print( pbuffer );
             if (battery==1) {                       // battery status
-               Serial.print("BAT=LOW;");               
+               Serial.print(F("BAT=LOW;"));               
             } else {
-               Serial.print("BAT=OK;");                
+               Serial.print(F("BAT=OK;"));                
             }
             Serial.println();
             //==================================================================================
@@ -230,19 +234,19 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
             //==================================================================================
             // Output
             // ----------------------------------
-            sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-            Serial.print( buffer );
-            Serial.print("UPM/Esic;");              // Label
-            sprintf(buffer, "ID=%02x%02x;", rc, devicecode); // ID    
-            Serial.print( buffer );
-            sprintf(buffer, "TEMP=%04x;", temperature);     
-            Serial.print( buffer );
-            sprintf(buffer, "HUM=%02d;", humidity); // Humidity 0x15 = 21% decimal 
-            Serial.print( buffer );
+            sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+            Serial.print( pbuffer );
+            Serial.print(F("UPM/Esic;"));           // Label
+            sprintf(pbuffer, "ID=%02x%02x;", rc, devicecode); // ID    
+            Serial.print( pbuffer );
+            sprintf(pbuffer, "TEMP=%04x;", temperature);     
+            Serial.print( pbuffer );
+            sprintf(pbuffer, "HUM=%02d;", humidity); // Humidity 0x15 = 21% decimal 
+            Serial.print( pbuffer );
             if (battery==1) {                       // battery status
-               Serial.print("BAT=LOW;");               
+               Serial.print(F("BAT=LOW;"));               
             } else {
-               Serial.print("BAT=OK;");                
+               Serial.print(F("BAT=OK;"));                
             }
             Serial.println();
             //==================================================================================
@@ -260,15 +264,15 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
          //==================================================================================
          // Output
          // ----------------------------------
-         sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-         Serial.print( buffer );
-         Serial.print("UPM/Esic F2;");                    // Label
-         sprintf(buffer, "ID=%02x%02x;", rc, devicecode); // ID    
-         Serial.print( buffer );
-         sprintf(buffer, "TEMP=%04x;", temperature);     
-         Serial.print( buffer );
-         sprintf(buffer, "HUM=%02x;", humidity);     
-         Serial.print( buffer );
+         sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+         Serial.print( pbuffer );
+         Serial.print(F("UPM/Esic F2;"));                 // Label
+         sprintf(pbuffer, "ID=%02x%02x;", rc, devicecode); // ID    
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "TEMP=%04x;", temperature);     
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "HUM=%02x;", humidity);     
+         Serial.print( pbuffer );
          Serial.println();
          //==================================================================================
       }
@@ -276,9 +280,6 @@ boolean Plugin_042(byte function, struct NodoEventStruct *event, char *string)
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet
       RawSignal.Number=0;
       success = true;
-      break;
-    }
 #endif // PLUGIN_042_CORE
-  }      
   return success;
 }

@@ -48,39 +48,28 @@
  * L = ?
  * M = Checksum
  \*********************************************************************************************/
-#define PLUGIN_ID 100
-#define PLUGIN_NAME "AlectoV2"
-
-#define DKW2012_PULSECOUNT 176
+#define DKW2012_MIN_PULSECOUNT 164
+#define DKW2012_MAX_PULSECOUNT 176
 #define ACH2010_MIN_PULSECOUNT 160 // reduce this value (144?) in case of bad reception
 #define ACH2010_MAX_PULSECOUNT 160
 
 uint8_t Plugin_100_ProtocolAlectoCRC8( uint8_t *addr, uint8_t len);
 
-unsigned int Plugin_100_ProtocolAlectoRainBase=0;
 
-boolean Plugin_100(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_100(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_100_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
-      if (!(((RawSignal.Number >= ACH2010_MIN_PULSECOUNT) && (RawSignal.Number <= ACH2010_MAX_PULSECOUNT)) || (RawSignal.Number == DKW2012_PULSECOUNT))) return false;
+      if (!(((RawSignal.Number >= ACH2010_MIN_PULSECOUNT) && (RawSignal.Number <= ACH2010_MAX_PULSECOUNT)) || ((RawSignal.Number >= DKW2012_MIN_PULSECOUNT) && (RawSignal.Number <= DKW2012_MAX_PULSECOUNT)))) return false;
 
       byte c=0;
       byte rfbit;
-      byte data[9]; 
+      byte data[10]; 
       byte msgtype=0;
       byte rc=0;
-      unsigned int rain=0;
       byte checksum=0;
       byte checksumcalc=0;
-      byte basevar;
       byte maxidx = 8;
-      char buffer[11]="";  
       //==================================================================================
       if(RawSignal.Number > ACH2010_MAX_PULSECOUNT) maxidx = 9;  
       // Get message back to front as the header is almost never received complete for ACH2010
@@ -105,9 +94,10 @@ boolean Plugin_100(byte function, struct NodoEventStruct *event, char *string)
       if (checksum != checksumcalc) return false;
       if ((msgtype != 10) && (msgtype != 5)) return true;  // why true?
       //==================================================================================
-      int wdir = 0;
-      int temp = 0;
+      unsigned int temp = 0;
+      unsigned int rain=0;
       byte hum = 0;
+      int wdir = 0;
       int wspeed = 0;
       int wgust = 0;
       
@@ -118,43 +108,40 @@ boolean Plugin_100(byte function, struct NodoEventStruct *event, char *string)
       wgust = data[5] * 108;
       wgust = wgust / 10;
       rain = (data[6] * 256) + data[7];
-      if (RawSignal.Number == DKW2012_PULSECOUNT) wdir = (data[8] & 0xf);
+      if (RawSignal.Number >= DKW2012_MIN_PULSECOUNT) wdir = (data[8] & 0xf);
       // ----------------------------------
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+      Serial.print( pbuffer );
       // ----------------------------------
-      if (RawSignal.Number == DKW2012_PULSECOUNT) {
+      if (RawSignal.Number >= DKW2012_MIN_PULSECOUNT) {
          Serial.print("DKW2012;");                    // Label
       } else {
          Serial.print("Alecto V2;");                    // Label
       }
-      sprintf(buffer, "ID=00%02x;", rc);   // ID    
-      Serial.print( buffer );
-      sprintf(buffer, "TEMP=%04x;", temp);     
-      Serial.print( buffer );
-      sprintf(buffer, "HUM=%02x;", hum);     
-      Serial.print( buffer );
-      sprintf(buffer, "WINSP=%04x;", wspeed);     
-      Serial.print( buffer );
-      sprintf(buffer, "WINGS=%04x;", wgust);     
-      Serial.print( buffer );
-      sprintf(buffer, "RAIN=%04x;", rain);     
-      Serial.print( buffer );
-      if (RawSignal.Number == DKW2012_PULSECOUNT) {
-         sprintf(buffer, "WDIR=%04x;", wdir);     
-         Serial.print( buffer );
+      sprintf(pbuffer, "ID=00%02x;", rc);   // ID    
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "TEMP=%04x;", temp);     
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "HUM=%02x;", hum);     
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "WINSP=%04x;", wspeed);     
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "WINGS=%04x;", wgust);     
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "RAIN=%04x;", rain);     
+      Serial.print( pbuffer );
+      if (RawSignal.Number >= DKW2012_MIN_PULSECOUNT) {
+         sprintf(pbuffer, "WDIR=%04x;", wdir);     
+         Serial.print( pbuffer );
       }
       Serial.println();     
       // ----------------------------------
       RawSignal.Repeats=true;                          // suppress repeats of the same RF packet
       RawSignal.Number=0;                              // do not process the packet any further
       success = true;                                  // processing successful
-      break;
-    }
 #endif // PLUGIN_100_CORE
-  }      
   return success;
 }
 

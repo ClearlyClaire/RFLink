@@ -30,91 +30,80 @@
  * 20;34;DEBUG;Pulses=66;Pulses(uSec)=325,3725,325,1825,325,1825,325,1825,325,3700,325,3700,325,3700,325,3700,325,3700,325,1850,300,1825,325,1850,325,1825,325,1850,325,1825,300,1825,325,3725,300,3725,325,1825,325,1825,300,3725,300,1850,325,3725,300,1850,325,3725,300,3700,300,3725,300,1825,325,3700,325,3700,300,3700,325,1825,325;
  * 20;0A;DEBUG;Pulses=66;Pulses(uSec)=325,1850,300,1850,300,3700,300,1850,300,1850,300,1850,325,1850,300,1850,325,3700,325,1850,300,1850,300,1825,325,1850,300,1850,325,1825,300,1850,325,3725,300,3700,325,1825,300,1850,325,3700,300,3725,300,3725,300,1850,300,1850,300,3725,325,3700,300,1850,300,1825,325,1850,300,3700,300,1850,325;
  \*********************************************************************************************/
-#define PLUGIN_ID 45
-#define PLUGIN_NAME "Auriol"
-
 #define AURIOL_PULSECOUNT 66
 
-boolean Plugin_045(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_045(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_045_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
       if (RawSignal.Number != AURIOL_PULSECOUNT) return false;
-
-      unsigned long bitstream1=0;
+      unsigned long bitstream=0L;
+      unsigned int temperature=0;
       byte rc=0;
       byte bat=0;
-      int temperature=0;
-      byte checksum=0;
-      byte start=0;
-      byte basevar;
-      char buffer[11]=""; 
-      
-      byte temp=0;
       byte checksumcalc=0;
-      byte type=0;
       //==================================================================================
       if (RawSignal.Number == AURIOL_PULSECOUNT) {
-		 for(int x=2;x <66;x+=2) {
-            if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 550) return false;
-            if(RawSignal.Pulses[x]*RawSignal.Multiply > 3000) {
-              bitstream1 = (bitstream1 << 1) | 0x1; 
-            } else {
-              if(RawSignal.Pulses[x]*RawSignal.Multiply < 1600) return false; // pulse lengths between 600-3000 are invalid
-              bitstream1 = (bitstream1 << 1);
+		 for(int x=2;x < AURIOL_PULSECOUNT;x+=2) {
+            if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 550) return false; // inbetween pulses should not exceed a length of 550
+            if(RawSignal.Pulses[x]*RawSignal.Multiply > 3000) {               // long bit = 1
+              bitstream = (bitstream << 1) | 0x1; 
+            } else {                                                          
+              if(RawSignal.Pulses[x]*RawSignal.Multiply < 1600) return false; // pulse length too short to be valid?
+              if(RawSignal.Pulses[x]*RawSignal.Multiply > 2200) return false; // pulse length between 2000 - 3000 is invalid
+              bitstream = (bitstream << 1);                                 // short bit = 0  
             }
 		 }
       }
       //==================================================================================
-      // First perform a sanity check
-      if (bitstream1 == 0) return false;
-      // ------------------------
-      // Perform a checksum calculation to make sure the received packet is a valid Auriol packet
-      for (int i=1;i<32;i++) {
-          checksumcalc=checksumcalc^ ((bitstream1>>i)&0x01);
-      }
-      if (checksumcalc != (bitstream1&0x01) ) return false;
-      // ------------------------
-      // After the checksum check, do another sanity check on some selected bits
-      rc = (bitstream1 >> 20) & 0x07;            // get 3 bits, should always be 000
-      if (rc != 0) return false; 
+      // Prevent repeating signals from showing up
       //==================================================================================
-      bat= (bitstream1 >> 23) & 0x01;            // get battery strength indicator
-      temperature = (bitstream1 >> 8) & 0xfff;   // get 12 temperature bits
-      rc = (bitstream1 >> 24) & 0xff;            // get rolling code
+      if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer+1000<millis()) ) { 
+         // not seen the RF packet recently
+         if (bitstream == 0) return false;         // Perform a sanity check
+      } else {
+         // already seen the RF packet recently
+         return true;
+      }
+      //==================================================================================
+      for (int i=1;i<32;i++) {                   // Perform a checksum calculation to make sure the received packet is a valid Auriol packet
+          checksumcalc=checksumcalc^ ((bitstream>>i)&0x01);
+      }
+      if (checksumcalc != (bitstream&0x01) ) return false;
+      rc = (bitstream >> 20) & 0x07;            // get 3 bits to perform another sanity check
+      if (rc != 0) return false;                 // selected bits should always be 000
+      //==================================================================================
+      bat= (bitstream >> 23) & 0x01;            // get battery strength indicator
+      temperature = (bitstream >> 8) & 0xfff;   // get 12 temperature bits
+      rc = (bitstream >> 24) & 0xff;            // get rolling code
       if (temperature > 3000) {
          temperature=4096-temperature;           // fix for minus temperatures
+         if (temperature > 0x258) return false;  // temperature out of range ( > -60.0 degrees) 
          temperature=temperature | 0x8000;       // turn highest bit on for minus values
-      }      
+      } else {
+         if (temperature > 0x258) return false;  // temperature out of range ( > 60.0 degrees) 
+      }
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+      Serial.print( pbuffer );
       // ----------------------------------
-      Serial.print("Auriol;");                   // Label
-      sprintf(buffer, "ID=00%02x;", rc);         // ID    
-      Serial.print( buffer );
-      sprintf(buffer, "TEMP=%04x;", temperature);     
-      Serial.print( buffer );
+      Serial.print(F("Auriol;"));                // Label
+      sprintf(pbuffer, "ID=00%02x;", rc);         // ID    
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "TEMP=%04x;", temperature);     
+      Serial.print( pbuffer );
       if (bat==0) {                              // battery status
-         Serial.print("BAT=LOW;");
+         Serial.print(F("BAT=LOW;"));
       } else {
-         Serial.print("BAT=OK;");
+         Serial.print(F("BAT=OK;"));
       }
       Serial.println();
       //==================================================================================
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet
       RawSignal.Number=0;
       success = true;
-      break;
-    }
 #endif // PLUGIN_045_CORE
-  }      
   return success;
 }

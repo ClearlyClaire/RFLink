@@ -31,37 +31,24 @@
  *
  * BlyssSend address,switch,cmd;  => (16 bits,8 bits,on/off/allon/alloff)
  \*********************************************************************************************/
-#define PLUGIN_ID 06
-#define PLUGIN_NAME "Blyss"
-#define PLUGIN_006_EVENT        "Blyss"
-#define PLUGIN_006_COMMAND  "BlyssSend"
 #define BLYSS_PULSECOUNT 106
 
 void Blyss_Send(unsigned long address);
 
-boolean Plugin_006(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_006(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_006_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
       //==================================================================================
-      unsigned long bitstream=0;
-      unsigned long bitstream1=0;
+      unsigned long bitstream=0L;
+      unsigned long bitstream1=0L;
       byte bitcounter=0;
       byte checksum=0;
-      byte button=0;
-      byte group=0;
-      byte action=0;
-      char buffer[14]=""; 
 
       if (RawSignal.Number != BLYSS_PULSECOUNT) return false;
       //==================================================================================
       // get bits
-      for(byte x=2;x<RawSignal.Number;x=x+2) {
+      for(byte x=2;x < BLYSS_PULSECOUNT;x=x+2) {
          if (RawSignal.Pulses[x]*RawSignal.Multiply > 500) {
             if (bitcounter < 32) {
                 bitstream = (bitstream << 1); 
@@ -84,11 +71,20 @@ boolean Plugin_006(byte function, struct NodoEventStruct *event, char *string)
       checksum=((bitstream) >> 24);                 
       if (checksum != 0xFE) return false;
       //==================================================================================
+      // Prevent repeating signals from showing up
       //==================================================================================
+      if(SignalHash!=SignalHashPrevious || RepeatingTimer<millis()) { 
+         // not seen the RF packet recently
+      } else {
+         // already seen the RF packet recently
+         return true;
+      }      
+      //==================================================================================
+      byte status=((bitstream1) >> 16) &0x0f;
+      if (status > 3) return false;
       byte channel=((bitstream) >> 20) &0x0f;
       unsigned int address=((bitstream) >> 4) &0xffff;
       byte subchan=(bitstream) &0xf;
-      byte status=((bitstream1) >> 16) &0x0f;
       channel=channel+0x41;
       if (subchan==8) {
          subchan=1;
@@ -108,109 +104,95 @@ boolean Plugin_006(byte function, struct NodoEventStruct *event, char *string)
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++);// Node and packet number 
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++);// Node and packet number 
+      Serial.print( pbuffer );
       // ----------------------------------
-      Serial.print("Blyss;");                 // Label
-      sprintf(buffer, "ID=%04x;", address); // ID      
-      Serial.print( buffer );
-      sprintf(buffer, "SWITCH=%c%d;", channel,subchan);     
-      Serial.print( buffer );
-      Serial.print("CMD=");                         // command
-      if (status==0) Serial.print("ON;"); 
-      if (status==1) Serial.print("OFF;");
-      if (status==2) Serial.print("ALLON;");
-      if (status==3) Serial.print("ALLOFF;");
+      Serial.print(F("Blyss;"));                    // Label
+      sprintf(pbuffer, "ID=%04x;", address);         // ID      
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "SWITCH=%c%d;", channel,subchan);     
+      Serial.print( pbuffer );
+      Serial.print(F("CMD="));                      // command
+      if (status==0) Serial.print(F("ON;")); 
+      if (status==1) Serial.print(F("OFF;"));
+      if (status==2) Serial.print(F("ALLON;"));
+      if (status==3) Serial.print(F("ALLOFF;"));
       Serial.println();
       //==================================================================================
-      RawSignal.Repeats=true;                         // suppress RF signal repeats
+      RawSignal.Repeats=true;                    // suppress repeats of the same RF packet 
       RawSignal.Number=0;
       success=true;
-      break;
-    }
-    case PLUGIN_COMMAND:
-      {
-      event->Port=VALUE_ALL;                           // Signaal mag naar alle door de gebruiker met [Output] ingestelde poorten worden verzonden.
-      Blyss_Send(event->Par2);                         // event->Par2 contains the middle part of the bitstream to send
-      success=true;
-      break;
-    }    
 #endif // PLUGIN_006_CORE
-    #if NODO_MEGA
-    case PLUGIN_MMI_IN:
-      {
-        char *str=(char*)malloc(INPUT_COMMAND_SIZE);
-        // Hier aangekomen bevat string het volledige commando. Test als eerste of het opgegeven commando overeen komt met "EurodomestSend"
-        // Dit is het eerste argument in het commando.
-        if(GetArgv(string,str,1)) {
-            event->Type  = 0;
-            if (strcasecmp(str,PLUGIN_006_COMMAND)==0) {
-               event->Type  = NODO_TYPE_PLUGIN_COMMAND;
-            }
-            if (event->Type) {
-               event->Command = PLUGIN_ID;            // Plugin nummer  
-               unsigned long Home=0;                           // Blyss channel A..P
-               byte Address=0;                        // Blyss subchannel 1..5
-               byte c;
-               byte x=0;                              // teller die wijst naar het te behandelen teken
-               byte subchan=0;                        // subchannel
-                
-               if (GetArgv(string,str,2)) {           // Het door de gebruiker ingegeven eerste parameter bevat het adres
-                  event->Par2=str2int(str); 
-                  if (GetArgv(string,str,3)) {        // Het door de gebruiker ingegeven tweede parameter bevat adres volgens codering A0..P16 
-                     while((c=tolower(str[x++]))!=0) {
-                          if(c>='1' && c<='5'){Address=Address+c-'0';}
-                          if(c>='a' && c<='p'){Home=c-'a';}                                 // KAKU home A is intern 0
-                     }
-                     
-                     if (Address==1) subchan=0x80; 
-                     if (Address==2) subchan=0x40; 
-                     if (Address==3) subchan=0x20; 
-                     if (Address==4) subchan=0x10; 
-                     if (Address==5) subchan=0x30; 
-
-                     Home = Home << 24;
-                     event->Par2=(event->Par2) << 8;
-                     event->Par2=event->Par2+subchan;
-                     event->Par2=event->Par2+Home;
-                     if (GetArgv(string,str,4)) {   // Het door de gebruiker ingegeven derde parameter bevat het on/off commando
-                        event->Par1=str2cmd(str);
-                           
-                        if (event->Par1==VALUE_OFF) { 
-                           event->Par2=event->Par2|1;
-                        } else
-                        if (event->Par1==VALUE_ALLOFF) { 
-                           event->Par2=event->Par2|3;
-                        } else
-                        if (event->Par1==VALUE_ALLON) { 
-                           event->Par2=event->Par2|2;
-                        } 
-                        success=true;
-                     }
-                  }
-               }
-            }
-        }
-        free(str);
-        break;
-      }
-    #endif //MMI 
-
-  }      
   return success;
 }
 
+boolean PluginTX_006(byte function, char *string) {
+  boolean success=false;
+        //10;Blyss;00ff98;A1;OFF;
+        //012345678901234567890123456
+        // Hier aangekomen bevat string het volledige commando. Test als eerste of het opgegeven commando overeen komt
+     #ifdef PLUGIN_TX_006_CORE
+        if (strncasecmp(InputBuffer_Serial+3,"BLYSS;",6) == 0) { // Blyss Command eg. 
+           unsigned long Bitstream = 0L;
+           if (InputBuffer_Serial[15] != ';') return success; // check
+           if (InputBuffer_Serial[18] != ';') return success; // check
+
+           unsigned long Home=0;                    // Blyss channel A..P
+           byte Address=0;                          // Blyss subchannel 1..5
+           byte c;
+           byte subchan=0;                          // subchannel
+
+           InputBuffer_Serial[7]=0x30;
+           InputBuffer_Serial[8]=0x78;
+           InputBuffer_Serial[15]=0;
+           Bitstream=str2int(InputBuffer_Serial+7); // get address
+           
+           c=tolower(InputBuffer_Serial[16]);       // A..P
+           if(c>='a' && c<='p'){Home=c-'a';}
+           c=tolower(InputBuffer_Serial[17]);       // 1..5
+           if(c>='1' && c<='5'){Address=Address+c-'0';} 
+           
+           if (Address==1) subchan=0x80; 
+           if (Address==2) subchan=0x40; 
+           if (Address==3) subchan=0x20; 
+           if (Address==4) subchan=0x10; 
+           if (Address==5) subchan=0x30; 
+
+           Home = Home << 24;
+           Bitstream=(Bitstream) << 8;
+           Bitstream=Bitstream+subchan;
+           Bitstream=Bitstream+Home;
+
+           c = str2cmd(InputBuffer_Serial+19);      // ALL ON/OFF command
+           if (c == VALUE_OFF) { 
+              Bitstream=Bitstream|1;
+           } else
+              if (c == VALUE_ALLOFF) { 
+                 Bitstream=Bitstream|3;
+              } else
+              if (c == VALUE_ALLON) { 
+                 Bitstream=Bitstream|2;
+              } 
+           success=true;
+           Blyss_Send(Bitstream);                   // Bitstream contains the middle part of the bitstream to send
+        } 
+#endif // PLUGIN_006_CORE
+  return success;
+}
+
+#ifdef PLUGIN_TX_006_CORE
 void Blyss_Send(unsigned long address) { 
-    int fpulse = 400;                                  // Pulse witdh in microseconds
-    int fretrans = 5;                                  // Number of code retransmissions
+    int fpulse = 400;                               // Pulse witdh in microseconds
+    int fretrans = 5;                               // Number of code retransmissions
     uint32_t fdatabit;
     uint32_t fdatamask = 0x800000;
     uint32_t fsendbuff;
 
-    digitalWrite(PIN_RF_RX_VCC,LOW);                   // Spanning naar de RF ontvanger uit om interferentie met de zender te voorkomen.
-    digitalWrite(PIN_RF_TX_VCC,HIGH);                  // zet de 433Mhz zender aan
-    delay(TRANSMITTER_STABLE_TIME);                    // kleine pauze om de zender de tijd te geven om stabiel te worden 
-    byte temp=(millis() &0xff);                        // used for the timestamp at the end of the RF packet
+    digitalWrite(PIN_RF_RX_VCC,LOW);                // Spanning naar de RF ontvanger uit om interferentie met de zender te voorkomen.
+    digitalWrite(PIN_RF_TX_VCC,HIGH);               // zet de 433Mhz zender aan
+    //delay(TRANSMITTER_STABLE_TIME);                 // kleine pauze om de zender de tijd te geven om stabiel te worden 
+    delayMicroseconds(500);                         // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
+    byte temp=(millis() &0xff);                     // used for the timestamp at the end of the RF packet
     for (int nRepeat = 0; nRepeat <= fretrans; nRepeat++) {
         // send SYNC 1P low, 6P high
         digitalWrite(PIN_RF_TX_DATA, LOW);
@@ -222,16 +204,16 @@ void Blyss_Send(unsigned long address) {
         // Send preamble (0xfe) - 8 bits
         fsendbuff=0xfe;
         fdatamask=0x80;
-        for (int i = 0; i < 8; i++) {                  // Preamble
+        for (int i = 0; i < 8; i++) {               // Preamble
             // read data bit
-            fdatabit = fsendbuff & fdatamask;          // Get most left bit
-            fsendbuff = (fsendbuff << 1);              // Shift left
-            if (fdatabit != fdatamask) { // Write 0
+            fdatabit = fsendbuff & fdatamask;       // Get most left bit
+            fsendbuff = (fsendbuff << 1);           // Shift left
+            if (fdatabit != fdatamask) {            // Write 0
                 digitalWrite(PIN_RF_TX_DATA, LOW);
                 delayMicroseconds(fpulse * 2);
                 digitalWrite(PIN_RF_TX_DATA, HIGH);
                 delayMicroseconds(fpulse * 1);
-            } else { // Write 1
+            } else {                                // Write 1
                 digitalWrite(PIN_RF_TX_DATA, LOW);
                 delayMicroseconds(fpulse * 1);
                 digitalWrite(PIN_RF_TX_DATA, HIGH);
@@ -282,7 +264,10 @@ void Blyss_Send(unsigned long address) {
         digitalWrite(PIN_RF_TX_DATA, LOW);
         delayMicroseconds(fpulse * 14);
     }
-    delay(TRANSMITTER_STABLE_TIME);                    // kleine pause zodat de ether even schoon blijft na de stopbit
+    delayMicroseconds(500);                            // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
+    //delay(TRANSMITTER_STABLE_TIME);                    // kleine pause zodat de ether even schoon blijft na de stopbit
     digitalWrite(PIN_RF_TX_VCC,LOW);                   // zet de 433Mhz zender weer uit
     digitalWrite(PIN_RF_RX_VCC,HIGH);                  // Spanning naar de RF ontvanger weer aan.
+    RFLinkHW();
 }
+#endif // PLUGIN_006_CORE

@@ -3,8 +3,9 @@
 //##                                      Plugin-061 AlarmSensor                                       ##
 //#######################################################################################################
 /*********************************************************************************************\
- * This protocol provides support for some chinese Alarm "gadgets"
- * 
+ * This protocol provides support for some chinese Alarm "gadgets" (Motion detectors and door/window contacts)
+ * Note that these modules are reported as X10 switches to the Home Automation software so that they work correctly 
+ *
  * Author             : StuntTeam
  * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
@@ -13,6 +14,7 @@
  * Technical data:
  * Devices send 50 pulses. Manchester encoded, 25 bits
  *
+ * PIR Motion detection unit:
  * PCB contains 2 chips: biss0001 & ev1527
  * BISS0001 = Micro Power PIR Motion Detector IC  
  * EV1527   = OTP Encoder, max. of 20 bits providing up to 1 million codes.
@@ -21,66 +23,65 @@
  * Pulses=50, Pulses(uSec)=900,225,200,850,225,850,825,225,225,850,225,850,825,225,225,850,200,850,225,850,825,225,225,850,825,225,225,850,825,225,825,225,825,225,825,225,825,225,825,225,825,225,225,850,225,850,825,225,225,
  * 100101100101100101011001100110101010101010010110 
  * 01101101 1101010000000110  6D D406
+ 
+ * 20;9A;DEBUG;Pulses=50;Pulses(uSec)=475,925,400,950,1150,175,400,950,375,950,1125,200,1100,225,1100,250,1075,250,1075,275,1050,275,1050,275,1050,275,1050,275,275,1050,1050,275,300,1050,1050,275,300,1050,300,1050,1050,275,300,1050,275,1050,1050,275,275;
+ * 010110010110101010101010101001100110010110010110
+ * 11011000 0000001010110110  D8 02B6
  \*********************************************************************************************/
-#define PLUGIN_ID 061
-#define PLUGIN_NAME "AlarmSensor"
 #define ALARMPIRV1_PULSECOUNT 50
 
-boolean Plugin_061(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_061(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_061_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
-      char buffer[14]=""; 
-      RawSignal.Multiply=50;
-
       unsigned long bitstream=0L;
       unsigned long bitstream2=0L;
       //==================================================================================
       if (RawSignal.Number != ALARMPIRV1_PULSECOUNT) return false;
       for(byte x=2;x<=48;x=x+2) {
-        if ((RawSignal.Pulses[x-1]*RawSignal.Multiply < 600) && (RawSignal.Pulses[x]*RawSignal.Multiply < 600)) return false; // invalid manchestercode
-        if ((RawSignal.Pulses[x-1]*RawSignal.Multiply > 600) && (RawSignal.Pulses[x]*RawSignal.Multiply > 600)) return false; // invalid manchestercode
-        if (RawSignal.Pulses[x]*RawSignal.Multiply > 600) bitstream = (bitstream << 1) | 0x1; 
-        else bitstream = bitstream << 1;
+        if (RawSignal.Pulses[x]*RawSignal.Multiply > 600) {
+           if (RawSignal.Pulses[x]*RawSignal.Multiply > 1300) return false;
+           if (RawSignal.Pulses[x-1]*RawSignal.Multiply > 600) return false; // invalid manchestercode
+           bitstream = (bitstream << 1) | 0x1; 
+        } else { 
+           if (RawSignal.Pulses[x]*RawSignal.Multiply < 150) return false;
+           if (RawSignal.Pulses[x-1]*RawSignal.Multiply < 600) return false; // invalid manchestercode
+           bitstream = bitstream << 1;
+        }
       }
       //==================================================================================
       // Prevent repeating signals from showing up
       //==================================================================================
-      if(!RawSignal.RepeatChecksum && (SignalHash!=SignalHashPrevious || RepeatingTimer<millis())) {
+      if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer+2000<millis()) ){ 
          // not seen the RF packet recently
+         if (bitstream == 0) return false;
       } else {
          // already seen the RF packet recently
          return true;
       }       
       //==================================================================================
-      if (bitstream == 0) return false;
       bitstream2=(bitstream)>>16;
+      if ( (bitstream2)==0xff) {
+         if ( (bitstream)&0xffff==0xff) return false;
+      }
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+      Serial.print( pbuffer );
       // ----------------------------------
-      Serial.print("X10;");                         // Label
-      sprintf(buffer, "ID=%04x;", bitstream &0xffff);  // ID    
-      Serial.print( buffer );
-      sprintf(buffer, "SWITCH=%02x;", bitstream2 &0xff);  // ID    
-      Serial.print( buffer );
-      Serial.print("CMD=ON;");                      // this device reports movement only
+      Serial.print(F("X10;"));                         // Label
+      sprintf(pbuffer, "ID=%04x;", (bitstream)&0xffff);  // ID    
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "SWITCH=%02x;", (bitstream2)&0xff);  // ID    
+      Serial.print( pbuffer );
+      Serial.print(F("CMD=ON;"));                      // this device reports movement only
       Serial.println();
       //==================================================================================
       RawSignal.Repeats=true;                       // suppress repeats of the same RF packet
       RawSignal.Number=0;
-      return true;
-      break;
-    }
+      success=true;
 #endif // Plugin_061_CORE
-  }      
   return success;
 }
 

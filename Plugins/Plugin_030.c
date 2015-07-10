@@ -19,6 +19,7 @@
  *
  * Format for Temperature Humidity
  *   AAAAAAAA BBBB CCCC CCCC CCCC DDDDDDDD EEEE
+ *   00110110 1000 1011 0111 0000 00011100 0110
  *   RC       Type Temperature___ Humidity Checksum
  *   A = Rolling Code (includes channel number on low 2 bits of nibble1 (10=ch1 01=ch2 11=ch3) )
  *   B = Message type (xyyx = temp/humidity if yy <> '11')
@@ -29,8 +30,13 @@
  *   D = Humidity BCD format
  *   E = Checksum
  *
+ * Sample: 
+ * 20;F4;DEBUG;Pulses=74;Pulses(uSec)=450,1900,350,1900,350,3975,350,3975,350,1900,350,3975,350,3975,350,1900,350,3975,350,1900,350,1900,350,1900,350,3975,350,1900,350,3975,350,3975,350,1900,350,3975,350,3975,350,3975,350,1900,350,1900,350,1900,350,1900,350,1900,350,1900,350,1900,350,3975,350,3975,350,3975,350,1900,350,1900,350,1900,350,3975,350,3975,350,2025,350;
+ * 20;F5;Alecto V1;ID=006c;TEMP=00ed;HUM=38;
+ *
  * Format for Rain
  *   AAAAAAAA BBBB CCCC DDDD DDDD DDDD DDDD EEEE
+ *   01100001 0110 1100 1010 1011 0010 0000 0010
  *   RC       Type      Rain                Checksum
  *   A = Rolling Code
  *   B = Message type (xyyx = NON temp/humidity data if yy = '11')
@@ -38,6 +44,10 @@
  *   D = Rain (bitvalue * 0.25 mm)
  *   E = Checksum
  *
+ * Sample: 
+ * 20;A8;DEBUG;Pulses=74;Pulses(uSec)=550,1925,425,4100,425,4100,425,1975,425,1975,425,1975,425,1975,425,4100,400,2000,425,4100,425,4100,425,1975,425,4100,425,4100,425,1975,425,1975,425,4100,425,1975,425,4100,400,1975,425,4100,425,1975,425,4100,425,4100,425,1975,450,1975,425,4100,450,1950,450,1950,450,1950,425,1975,450,1950,450,1950,475,1925,500,4025,475,1950,475;
+ * 20;A9;Alecto V1;ID=0086;RAIN=04d5;
+ * 
  * Format for Windspeed
  *   AAAAAAAA BBBB CCCC CCCC CCCC DDDDDDDD EEEE
  *   RC       Type                Windspd  Checksum
@@ -49,6 +59,7 @@
  *
  * Format for Winddirection & Windgust
  *   AAAAAAAA BBBB CCCD DDDD DDDD EEEEEEEE FFFF
+     01110000 0000 1111 1011 0000 00000000 0101
  *   RC       Type      Winddir   Windgust Checksum
  *   A = Rolling Code
  *   B = Message type (xyyx = NON temp/humidity data if yy = '11')
@@ -60,21 +71,15 @@
  * Sample:
  * 20;53;DEBUG;Pulses=74;Pulses(uSec)=425,3800,350,1825,350,1825,325,1825,350,1825,325,3800,350,3800,350,1825,325,3800,350,1825,325,1800,350,1825,350,1825,325,1825,325,3800,325,1825,350,1800,350,1825,325,3825,325,3800,325,1825,325,1825,325,1800,325,1825,350,3800,325,1825,325,3800,350,1800,350,1800,350,3800,350,1825,325,1825,325,1825,325,1825,350,1825,325,1925,325;
  \*********************************************************************************************/
-#define PLUGIN_ID 30
-#define PLUGIN_NAME "AlectoV1"
 #define WS3500_PULSECOUNT 74
 
-boolean Plugin_030(byte function, struct NodoEventStruct *event, char *string)
+boolean Plugin_030(byte function, char *string)
 {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_030_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
       if (RawSignal.Number != WS3500_PULSECOUNT) return false;
-      unsigned long bitstream=0;
+      unsigned long bitstream=0L;
       byte nibble0=0;
       byte nibble1=0;
       byte nibble2=0;
@@ -92,11 +97,10 @@ boolean Plugin_030(byte function, struct NodoEventStruct *event, char *string)
       int winddirection=0;
       byte checksumcalc = 0;
       byte rc=0;
-      char buffer[14]=""; 
-
+      byte battery=0;
       //==================================================================================
       for(byte x=2; x<=64; x=x+2) {
-         if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 550) return false;
+         if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 700) return false; // in between pulses should be short
          if (RawSignal.Pulses[x]*RawSignal.Multiply > 2560) {
             bitstream = ((bitstream >> 1) |(0x1L << 31)); 
          } else {
@@ -109,6 +113,17 @@ boolean Plugin_030(byte function, struct NodoEventStruct *event, char *string)
          } else {
             checksum = (checksum >> 1);
          }
+      }
+      //==================================================================================
+      // Prevent repeating signals from showing up
+      //==================================================================================
+      if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer+1000<millis() && SignalCRC != bitstream) || (SignalCRC != bitstream) ) { 
+         // not seen the RF packet recently
+         if (bitstream == 0) return false;          // Perform a sanity check
+         SignalCRC=bitstream;
+      } else {
+         // already seen the RF packet recently
+         return true;
       }
       //==================================================================================
       // Sort nibbles
@@ -133,99 +148,105 @@ boolean Plugin_030(byte function, struct NodoEventStruct *event, char *string)
       }
       if (checksum != checksumcalc) return false;
       //==================================================================================
-      // Prevent repeating signals from showing up
-      //==================================================================================
-      if(!RawSignal.RepeatChecksum && (SignalHash!=SignalHashPrevious || RepeatingTimer<millis())) {
-         // not seen the RF packet recently
-         if (bitstream == 0) return false;
-      } else {
-         // already seen the RF packet recently
-         return true;
-      }  
+      battery=(nibble2)&0x1;                              // get battery indicator
+      nibble2=(nibble2)&0x06;                             // prepare nibble to contain only the needed bits
+      nibble3=(nibble3)&0x07;                             // prepare nibble to contain only the needed bits
       //==================================================================================
       rc = bitstream & 0xff;
 
-      if ((nibble2 & 0x6) != 6) {  // nibble 2 needs to be set to something other than 'x11x' to be a temperature packet
+      if ((nibble2) != 6) {  // nibble 2 needs to be set to something other than 'x11x' to be a temperature packet
          // Temperature packet
          temperature = (bitstream >> 12) & 0xfff;
          //fix 12 bit signed number conversion
-         if ((temperature & 0x800) == 0x800) temperature = temperature - 0x1000;
+         if ((temperature & 0x800) == 0x800) {
+            temperature=4096-temperature;                 // fix for minus temperatures
+            if (temperature > 0x258) return false;        // temperature out of range ( > -60.0 degrees) 
+            temperature=temperature | 0x8000;             // turn highest bit on for minus values
+         } else {
+            if (temperature > 0x258) return false;        // temperature out of range ( > 60.0 degrees) 
+         }
          humidity = (16 * nibble7) + nibble6;
+         if (humidity > 99) return false;                 // Humidity out of range
          //==================================================================================
          // Output
          // ----------------------------------
-         sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-         Serial.print( buffer );
+         sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+         Serial.print( pbuffer );
          // ----------------------------------
-         Serial.print("Alecto V1;");                      // Label
-         sprintf(buffer, "ID=%02x%02x;", (rc &0x03), (rc &0xfc)  ); // ID is split into channel number and rolling code 
-         Serial.print( buffer );
-         sprintf(buffer, "TEMP=%04x;", temperature);     
-         Serial.print( buffer );
-         sprintf(buffer, "HUM=%02x;", humidity);     
-         Serial.print( buffer );
+         Serial.print(F("Alecto V1;"));                  // Label
+         sprintf(pbuffer, "ID=%02x%02x;", (rc &0x03), (rc &0xfc)  ); // ID is split into channel number and rolling code 
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "TEMP=%04x;", temperature);     
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "HUM=%02x;", humidity);     
+         Serial.print( pbuffer );
+         if (battery==0) {          
+            Serial.print("BAT=OK;");
+         } else {
+            Serial.print("BAT=LOW;");
+         }
          Serial.println();
          //==================================================================================
          RawSignal.Repeats=true;                          // suppress repeats of the same RF packet
          RawSignal.Number=0;
          return true;
       } else {
-         if ((nibble3 & 0x7) == 3) { // Rain packet
+         if ((nibble3) == 3) { // Rain packet
             rain = ((bitstream >> 16) & 0xffff);
             //==================================================================================
             // Output
             // ----------------------------------
-            sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-            Serial.print( buffer );
+            sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+            Serial.print( pbuffer );
             // ----------------------------------
-            Serial.print("Alecto V1;");                    // Label
-            sprintf(buffer, "ID=00%02x;", rc);             // ID    
-            Serial.print( buffer );
-            sprintf(buffer, "RAIN=%04x;", rain);     
-            Serial.print( buffer );
+            Serial.print(F("Alecto V1;"));                 // Label
+            sprintf(pbuffer, "ID=00%02x;", rc);             // ID    
+            Serial.print( pbuffer );
+            sprintf(pbuffer, "RAIN=%04x;", rain);     
+            Serial.print( pbuffer );
             Serial.println();
             //==================================================================================
             RawSignal.Repeats=true;                        // suppress repeats of the same RF packet
             RawSignal.Number=0;
             return true;
          }
-         if ((nibble3 & 0x7) == 1) {  // windspeed packet
+         if ((nibble3) == 1) {  // windspeed packet
             windspeed = ((bitstream >> 24) & 0xff);
             windspeed = windspeed*72;
             //==================================================================================
             // Output
             // ----------------------------------
-            sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-            Serial.print( buffer );
+            sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+            Serial.print( pbuffer );
             // ----------------------------------
-            Serial.print("Alecto V1;");                // Label
-            sprintf(buffer, "ID=00%02x;", rc);         // ID    
-            Serial.print( buffer );
-            sprintf(buffer, "WINSP=%04x;", windspeed);     
-            Serial.print( buffer );
+            Serial.print(F("Alecto V1;"));             // Label
+            sprintf(pbuffer, "ID=00%02x;", rc);         // ID    
+            Serial.print( pbuffer );
+            sprintf(pbuffer, "WINSP=%04x;", windspeed);     
+            Serial.print( pbuffer );
             Serial.println();
             //==================================================================================
             RawSignal.Repeats=true;                    // suppress repeats of the same RF packet
             RawSignal.Number=0;
             return true;
          }
-         if ((nibble3 & 0x7) == 7) { // winddir packet
+         if ((nibble3) == 7) { // winddir packet
             winddirection = ((bitstream >> 15) & 0x1ff) / 45;
             windgust = ((bitstream >> 24) & 0xff);
             windgust = windgust*72;
             //==================================================================================
             // Output
             // ----------------------------------
-            sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-            Serial.print( buffer );
+            sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+            Serial.print( pbuffer );
             // ----------------------------------
-            Serial.print("Alecto V1;");                // Label
-            sprintf(buffer, "ID=00%02x;", rc);         // ID    
-            Serial.print( buffer );
-            sprintf(buffer, "WINDIR=%04x;", winddirection);     
-            Serial.print( buffer );
-            sprintf(buffer, "WINGS=%04x;", windgust);     
-            Serial.print( buffer );
+            Serial.print(F("Alecto V1;"));             // Label
+            sprintf(pbuffer, "ID=00%02x;", rc);         // ID    
+            Serial.print( pbuffer );
+            sprintf(pbuffer, "WINDIR=%04x;", winddirection);     
+            Serial.print( pbuffer );
+            sprintf(pbuffer, "WINGS=%04x;", windgust);     
+            Serial.print( pbuffer );
             Serial.println();
             //==================================================================================
             RawSignal.Repeats=true;                    // suppress repeats of the same RF packet
@@ -234,9 +255,6 @@ boolean Plugin_030(byte function, struct NodoEventStruct *event, char *string)
          }
       }
       success = true;
-      break;
-    }
 #endif // PLUGIN_030_CORE
-  }      
   return success;
 }

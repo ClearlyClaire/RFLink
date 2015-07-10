@@ -29,44 +29,39 @@
  * Pulses=66, Pulses(uSec)=700,250,275,725,750,250,275,725,750,250,275,725,750,250,275,725,750,250,
  * 275,725,750,250,275,725,750,250,275,725,750,250,275,725,275,725,275,725,275,725,275,725,275,725,
  * 275,725,275,725,275,725,275,725,275,725,275,725,750,250,750,250,750,250,275,725,275,725,225,
+ * 20;8C;DEBUG;Pulses=66;Pulses(uSec)=1800,550,600,1500,1600,550,600,1500,1600,550,600,1500,1600,550,600,1500,1600,550,600,1500,1600,500,600,1500,1600,550,600,1550,1600,550,600,1500,600,1500,600,1500,600,1500,600,1500,600,1500,600,1500,600,1500,600,1500,600,1500,600,1500,600,1500,1600,550,1600,500,1600,550,600,1500,600,1500,450;
+ * 20;2D;DEBUG;Pulses=66;Pulses(uSec)=875,275,300,750,800,275,300,750,800,275,300,750,800,275,300,750,800,275,300,750,800,250,300,750,800,275,275,750,800,275,300,750,300,750,300,750,300,750,300,750,300,750,300,750,300,750,300,750,300,750,300,750,300,750,800,275,800,275,800,250,300,750,300,750,225;
+ * 20;2E;Plieger York;ID=aaaa;SWITCH=1;CMD=ON;CHIME=02;
  \*********************************************************************************************/
-   // ==================================================================================
-#define PLUGIN_ID 71
-#define PLUGIN_NAME "Plieger"
 #define PLIEGER_PULSECOUNT 66
 
-boolean Plugin_071(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_071(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_071_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
       if (RawSignal.Number != PLIEGER_PULSECOUNT) return false;
 
-      unsigned long bitstream=0;
-      byte rc=0;
-      int id=0;
+      unsigned long bitstream=0L;  
+      unsigned int id=0;
       byte chime=0;
-      byte basevar=0;
-      char buffer[11]=""; 
       //==================================================================================
       // get all 32 bits
-      for(byte x=1;x <=64;x+=2) {
-         if(RawSignal.Pulses[x]*RawSignal.Multiply > 400) {
-           if (RawSignal.Pulses[x]*RawSignal.Multiply > 1200) return false;
+      for(byte x=1;x <=PLIEGER_PULSECOUNT-2;x+=2) {
+         if(RawSignal.Pulses[x]*RawSignal.Multiply > 700) {
+           if (RawSignal.Pulses[x]*RawSignal.Multiply > 1900) return false;
+           if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 700) return false;  // Valid Manchester check
            bitstream = (bitstream << 1) | 0x1; 
          } else {
+           if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 700) return false;  // Valid Manchester check
            bitstream = (bitstream << 1);
          }
       }
       //==================================================================================
       // Prevent repeating signals from showing up
       //==================================================================================
-      if(!RawSignal.RepeatChecksum && (SignalHash!=SignalHashPrevious || RepeatingTimer<millis())) {
+      if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer+1000<millis()) ){ 
          // not seen the RF packet recently
+         if (bitstream == 0) return false;            // sanity check
       } else {
          // already seen the RF packet recently
          return true;
@@ -83,23 +78,20 @@ boolean Plugin_071(byte function, struct NodoEventStruct *event, char *string)
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+      Serial.print( pbuffer );
       // ----------------------------------
-      Serial.print("Plieger York;");                   // Label
-      sprintf(buffer, "ID=%04x;", id);                 // ID      
-      Serial.print( buffer );
+      Serial.print(F("Plieger York;"));                   // Label
+      sprintf(pbuffer, "ID=%04x;", id);                 // ID      
+      Serial.print( pbuffer );
       Serial.print("SWITCH=1;CMD=ON;");  
-      sprintf(buffer, "CHIME=%02x;", chime);           // chime number
-      Serial.print( buffer );
+      sprintf(pbuffer, "CHIME=%02x;", chime);           // chime number
+      Serial.print( pbuffer );
       Serial.println();
       //==================================================================================
       RawSignal.Repeats=true;                          // suppress repeats of the same RF packet
       RawSignal.Number=0;                              // do not process the packet any further
       success = true;                                  // processing successful
-      break;
-    }
 #endif // PLUGIN_071_CORE
-  }      
   return success;
 }

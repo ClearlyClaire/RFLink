@@ -15,7 +15,7 @@
  * Changelog: v1.0 initial release
  *********************************************************************************************
  * Technical information:
- * Decodes signals from a Mebus Weatherstation outdoor unit, (29 pulses, 28 bits, 433 MHz).
+ * Decodes signals from a Mebus Weatherstation outdoor unit, (58 pulses, 28 bits, 433 MHz).
  * Mebus Message Format: 
  * AAAA BBBB BBBB CCCC CCCC CCCC DDEF
  *
@@ -27,6 +27,8 @@
  * F = 0 when "normal" data transmit, 1 when "requested" data transmit (TX button press)
  *
  * 20;DE;DEBUG;Pulses=58;Pulses(uSec)=525,1800,350,1800,350,4275,350,1800,350,4275,350,4275,350,4275,350,1800,350,4250,350,4275,350,1800,350,4250,350,1800,350,1800,350,1800,350,1800,350,4275,350,4275,350,4250,350,1800,350,1800,350,1800,350,4275,350,4250,350,1800,350,4275,350,4275,350,4250,350;
+ * 20;80;DEBUG;Pulses=58;Pulses(uSec)=450,4450,375,4450,375,4450,375,4450,375,1875,375,4450,375,4450,375,1875,375,1875,375,4425,375,4425,375,4425,375,1875,375,1875,375,1875,375,4425,375,1875,375,1875,375,1875,375,1875,375,4450,375,4450,375,1875,375,1875,375,1875,375,4450,375,4425,375,1875,375;
+ * 20;81;Mebus;ID=6701;TEMP=010c;
  \*********************************************************************************************/
    // ==================================================================================
    // MEBUS bit packets 
@@ -40,47 +42,50 @@
    //                  |----------|----------> temperature 0 - 51.1  
    //                |-|---------------------> set when minus temperatures -51.2 - 0
    // ==================================================================================
-#define PLUGIN_ID 40
-#define PLUGIN_NAME "Mebus"
 #define MEBUS_PULSECOUNT 58
 
-boolean Plugin_040(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_040(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_040_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
       if (RawSignal.Number != MEBUS_PULSECOUNT) return false;
-
-      char buffer[11]=""; 
-      unsigned long bitstream1=0;
+      unsigned long bitstream=0L;
+      unsigned int temperature=0;
       byte rc=0;
-      int temperature=0;
-      byte minus=0;
       byte checksum=0;
       byte data[7];
       byte channel=0;
       //==================================================================================
       // get all 28 bits
-      for(byte x=2;x <=56;x+=2) {
-         if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 550) return false;
-         if (RawSignal.Pulses[x]*RawSignal.Multiply > 2975) {
-            bitstream1 = (bitstream1 << 1) | 0x1; 
+      for(byte x=2;x <=MEBUS_PULSECOUNT-2;x+=2) {
+         if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 550) return false; // make sure inbetween pulses are not too long
+         if (RawSignal.Pulses[x]*RawSignal.Multiply > 3400) {
+            bitstream = (bitstream << 1) | 0x1; 
          } else {
-            bitstream1 = (bitstream1 << 1);
+            if (RawSignal.Pulses[x]*RawSignal.Multiply > 2000) return false; // invalid pulse length
+            if (RawSignal.Pulses[x]*RawSignal.Multiply < 1500) return false; // invalid pulse length
+            bitstream = (bitstream << 1);
          }
       }
       //==================================================================================
-      data[0] = (bitstream1 >> 24) & 0x0f;     // prepare nibbles from bit stream
-      data[1] = (bitstream1 >> 20) & 0x0f;
-      data[2] = (bitstream1 >> 16) & 0x0f;
-      data[3] = (bitstream1 >> 12) & 0x0f;
-      data[4] = (bitstream1 >>  8) & 0x0f;
-      data[5] = (bitstream1 >>  4) & 0x0f;
-      data[6] = (bitstream1 >>  0) & 0x0f;
+      // Prevent repeating signals from showing up
+      //==================================================================================
+      if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer+1000<millis() && SignalCRC != bitstream) || (SignalCRC != bitstream) ) { 
+         SignalCRC=bitstream;
+         // not seen the RF packet recently
+         if (bitstream == 0) return false;         // Perform a sanity check
+      } else {
+         // already seen the RF packet recently
+         return true;
+      }
+      //==================================================================================
+      data[0] = (bitstream >> 24) & 0x0f;     // prepare nibbles from bit stream
+      data[1] = (bitstream >> 20) & 0x0f;
+      data[2] = (bitstream >> 16) & 0x0f;
+      data[3] = (bitstream >> 12) & 0x0f;
+      data[4] = (bitstream >>  8) & 0x0f;
+      data[5] = (bitstream >>  4) & 0x0f;
+      data[6] = (bitstream >>  0) & 0x0f;
       //==================================================================================
       // first perform a checksum check to make sure the packet is a valid mebus packet
       checksum=data[1]+data[2]+data[3]+data[4]+data[5]+data[6];
@@ -88,30 +93,30 @@ boolean Plugin_040(byte function, struct NodoEventStruct *event, char *string)
       if (checksum != data[0]) return false;
       //==================================================================================
       rc=(data[1]<<4) + data[2];
-      channel=data[6]>>2;
+      channel=(data[6])>>2;
       temperature=(data[3]<<8)+(data[4]<<4)+data[5];
       if (temperature > 3000) {
          temperature=4096-temperature;              // fix for minus temperatures
+         if (temperature > 0x258) return false;     // temperature out of range ( > -60.0 degrees) 
          temperature=temperature | 0x8000;          // turn highest bit on for minus values
+      } else {
+         if (temperature > 0x258) return false;     // temperature out of range ( > 60.0 degrees) 
       }
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( buffer );
-      Serial.print("Mebus;");                          // Label
-      sprintf(buffer, "ID=%02x%02x;", rc, channel);    // ID    
-      Serial.print( buffer );
-      sprintf(buffer, "TEMP=%04x;", temperature);     
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+      Serial.print( pbuffer );
+      Serial.print(F("Mebus;"));                       // Label
+      sprintf(pbuffer, "ID=%02x%02x;", rc, channel);    // ID    
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "TEMP=%04x;", temperature);     
+      Serial.print( pbuffer );
       Serial.println();
       //==================================================================================
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet
       RawSignal.Number=0;
       success = true;
-      break;
-    }
 #endif // PLUGIN_040_CORE
-  }      
   return success;
 }

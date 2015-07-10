@@ -29,9 +29,6 @@
  * is furnished to do so, subject to the following conditions:
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  \*********************************************************************************************/
-#define PLUGIN_ID 48
-#define PLUGIN_NAME "Oregon"
-
 #define OSV3_PULSECOUNT_MIN 126 
 #define OSV3_PULSECOUNT_MAX 290 // make sure to check the max length in plugin 1 as well..!
 
@@ -365,22 +362,14 @@ byte checksum(byte type, int count, byte check) {
      return 1;
 }
 // =====================================================================================================
-boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_048(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_048_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
       if ((RawSignal.Number < OSV3_PULSECOUNT_MIN) || (RawSignal.Number > OSV3_PULSECOUNT_MAX) ) return false; 
 
-      byte basevar=0;
       byte rc=0;
       byte found = 0;
-      byte channel = 0;
-      char buffer[12]=""; 
       
       int temp = 0;
       byte hum = 0;
@@ -413,19 +402,19 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
              } 
           }
       }
-      if (found == 0) break;
+      if (found == 0) return false;
       
       // ==================================================================================
       // Protocol and device info:
       // ==================================================================================
-      Serial.print("Oregon V");
-      Serial.print(found);
-      Serial.print(": ");
-      for(byte x=0; x<13;x++) {
-          Serial.print( osdata[x],HEX ); 
-          Serial.print((" ")); 
-      }
-      Serial.println();  
+      //Serial.print("Oregon V");
+      //Serial.print(found);
+      //Serial.print(": ");
+      //for(byte x=0; x<13;x++) {
+      //    Serial.print( osdata[x],HEX ); 
+      //    Serial.print((" ")); 
+      //}
+      //Serial.println();  
       //Serial.print("Oregon ID="); 
       unsigned int id=(osdata[0]<<8)+ (osdata[1]);
       rc=osdata[0];
@@ -444,7 +433,7 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
          sum= (sum &0xff) + (sum>>8);              // add overflow to low byte
          if (osdata[3] != (sum & 0xff) ) {
             //Serial.println("CRC Error"); 
-            break;
+            return false;
          }
          // -------------       
          temp = ((osdata[2]>>4) * 100)  + ((osdata[1] & 0x0F) * 10) + ((osdata[1] >> 4));
@@ -452,14 +441,14 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("OregonV1;");                       // Label
-        sprintf(buffer, "ID=00%02x;", rc);               // ID    
-        Serial.print( buffer );
-        sprintf(buffer, "TEMP=%04x;", temp);     
-        Serial.print( buffer );
+        Serial.print(F("OregonV1;"));                    // Label
+        sprintf(pbuffer, "ID=00%02x;", rc);               // ID    
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "TEMP=%04x;", temp);     
+        Serial.print( pbuffer );
         Serial.println();
       } 
       // ==================================================================================
@@ -479,7 +468,7 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         sum=sum+(osdata[6]>>4);
         if ( checksum(2,6, sum) !=0) {  // checksum = all nibbles 0-11+13 results is nibbles 15 <<4 + 12
             //Serial.println("CRC Error"); 
-            break;
+            return false;
         }
         // -------------       
         temp = ((osdata[5]>>4) * 100)  + ((osdata[5] & 0x0F) * 10) + ((osdata[4] >> 4));
@@ -487,18 +476,18 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon Temp;");                    // Label
-        sprintf(buffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( buffer );
-        sprintf(buffer, "TEMP=%04x;", temp);     
-        Serial.print( buffer );
+        Serial.print(F("Oregon Temp;"));                    // Label
+        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "TEMP=%04x;", temp);     
+        Serial.print( pbuffer );
         if ((osdata[3] & 0x0F) >= 4) {
-           Serial.print("BAT=LOW;"); 
+           Serial.print(F("BAT=LOW;")); 
         } else {        
-           Serial.print("BAT=OK;"); 
+           Serial.print(F("BAT=OK;")); 
         }        
         Serial.println();
       } else
@@ -524,7 +513,7 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
       //      0 1 2 3 4 5 
       // F+A+2+8+1+4+A+9+3+0+2+2+3+0+4+4=4d-a=43 
       if(id == 0xfa28 || id == 0x1a2d || id == 0x1a3d || (id&0xfff)==0xACC || id == 0xca2c || id == 0xfab8 ) {
-        if ( checksum(1,8,osdata[8]) !=0) break;   // checksum = all nibbles 0-15 results is nibbles 16.17
+        if ( checksum(1,8,osdata[8]) !=0) return false;   // checksum = all nibbles 0-15 results is nibbles 16.17
         // -------------       
         temp = ((osdata[5]>>4) * 100)  + ((osdata[5] & 0x0F) * 10) + ((osdata[4] >> 4));
         if ((osdata[6] & 0x0F) >= 8) temp=temp | 0x8000;
@@ -533,20 +522,20 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon TempHygro;");               // Label
-        sprintf(buffer, "ID=%02x%02x;", osdata[1],osdata[3]);   // ID    
-        Serial.print( buffer );
-        sprintf(buffer, "TEMP=%04x;", temp);     
-        Serial.print( buffer );
-        sprintf(buffer, "HUM=%02x;", hum);     
-        Serial.print( buffer );
+        Serial.print(F("Oregon TempHygro;"));            // Label
+        sprintf(pbuffer, "ID=%02x%02x;", osdata[1],osdata[3]);   // ID    
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "TEMP=%04x;", temp);     
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "HUM=%02x;", hum);     
+        Serial.print( pbuffer );
         if ((osdata[4] & 0x0F) >= 4) {
-           Serial.print("BAT=LOW;"); 
+           Serial.print(F("BAT=LOW;")); 
         } else {        
-           Serial.print("BAT=OK;"); 
+           Serial.print(F("BAT=OK;")); 
         }        
         Serial.println();
       } else
@@ -596,22 +585,22 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon BTHR;");                    // Label
-        sprintf(buffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( buffer );
-        sprintf(buffer, "TEMP=%04x;", temp);     
-        Serial.print( buffer );
-        sprintf(buffer, "HUM=%02x;", hum);     
-        Serial.print( buffer );
-        sprintf(buffer, "HSTATUS=%d;", comfort);
-        Serial.print( buffer );
-        sprintf(buffer, "BARO=%04x;", baro);     
-        Serial.print( buffer );
-        sprintf(buffer, "BFORECAST=%d;", forecast);
-        Serial.print( buffer );
+        Serial.print(F("Oregon BTHR;"));                    // Label
+        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "TEMP=%04x;", temp);     
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "HUM=%02x;", hum);     
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "HSTATUS=%d;", comfort);
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "BARO=%04x;", baro);     
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "BFORECAST=%d;", forecast);
+        Serial.print( pbuffer );
 
 		//below is not correct, and for now discarded
         //if (((osdata[3] & 0x0F) & 0x04) != 0) {
@@ -648,20 +637,20 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon Rain;");                    // Label
-        sprintf(buffer, "ID=%02x%02x;", rc,osdata[3]);   // ID    
-        Serial.print( buffer );
-        sprintf(buffer, "RAIN=%04x;", rain);     
-        Serial.print( buffer );
-        sprintf(buffer, "RAINTOT=%04x;", raintot);     
-        Serial.print( buffer );
+        Serial.print(F("Oregon Rain;"));                 // Label
+        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[3]);   // ID    
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "RAIN=%04x;", rain);     
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "RAINTOT=%04x;", raintot);     
+        Serial.print( pbuffer );
         if ((osdata[3] & 0x0F) >= 4) {
-           Serial.print("BAT=LOW;"); 
+           Serial.print(F("BAT=LOW;")); 
         } else {        
-           Serial.print("BAT=OK;"); 
+           Serial.print(F("BAT=OK;")); 
         }        
         Serial.println();
       } else
@@ -677,7 +666,7 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         int sum = (osdata[9] >> 4);  
         if ( checksum(3,9,sum) !=0) { // checksum = all nibbles 0-17 result is nibble 18
             //Serial.print("CRC Error, "); 
-            break;
+            return false;
         }
         rain = ((osdata[5]>>4) * 100)  + ((osdata[5] & 0x0F) * 10) + (osdata[4] >> 4);
         //Serial.print(" RainTotal=");
@@ -686,22 +675,22 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon Rain2;");                   // Label
-        sprintf(buffer, "ID=%02x%02x;", rc,osdata[4]);   // ID    
-        Serial.print( buffer );
-        sprintf(buffer, "RAIN=%04x;", rain);     
-        Serial.print( buffer );
-        //sprintf(buffer, "RAINTOT=%04x;", raintot);     
-        //Serial.print( buffer );
+        Serial.print(F("Oregon Rain2;"));                   // Label
+        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[4]);   // ID    
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "RAIN=%04x;", rain);     
+        Serial.print( pbuffer );
+        //sprintf(pbuffer, "RAINTOT=%04x;", raintot);     
+        //Serial.print( pbuffer );
         if ((osdata[3] & 0x0F) >= 4) {
-           Serial.print("BAT=LOW;"); 
+           Serial.print(F("BAT=LOW;")); 
         } else {        
-           Serial.print("BAT=OK;"); 
+           Serial.print(F("BAT=OK;")); 
         }        
-        Serial.println();        
+        Serial.println();
       } else
       // ==================================================================================
       // 1a89  Anemometer: WGR800
@@ -715,12 +704,12 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
       //      0 1 2 3 4 5 6 7 8 9 
       // 1+A+8+9+0+4+8+8+0+0+C+0+0+4+3+1+1+0=45-a=3b
       if(id == 0x1a89) { // Wind sensor
-        if ( checksum(1,9,osdata[9]) !=0) break;
-        Serial.print(" WDIR=");
+        if ( checksum(1,9,osdata[9]) !=0) return false;
+        //Serial.print(" WDIR=");
         wdir=(osdata[4] >> 4);
         wdir=wdir*225;
         wdir=wdir/10;
-        Serial.print(wdir); 
+        //Serial.print(wdir); 
         // -------------       
         wspeed = (osdata[6] >> 4) * 10;
         wspeed = wspeed + (osdata[6] &0x0f) * 100;
@@ -732,24 +721,24 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon Wind;");                    // Label
-        sprintf(buffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( buffer );
-        sprintf(buffer, "WDIR=%04x;", wdir);     
-        Serial.print( buffer );
-        sprintf(buffer, "WINSP=%04x;", wspeed);     
-        Serial.print( buffer );
-        sprintf(buffer, "AWINSP=%04x;", awspeed);     
-        Serial.print( buffer );
+        Serial.print(F("Oregon Wind;"));                    // Label
+        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "WDIR=%04x;", wdir);     
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "WINSP=%04x;", wspeed);     
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "AWINSP=%04x;", awspeed);     
+        Serial.print( pbuffer );
         if ((osdata[3] & 0x0F) >= 4) {
-           Serial.print("BAT=LOW;"); 
+           Serial.print(F("BAT=LOW;")); 
         } else {        
-           Serial.print("BAT=OK;"); 
+           Serial.print(F("BAT=OK;")); 
         }        
-        Serial.println();                
+        Serial.println();
       } else
       // ==================================================================================
       // 3a0d  Anemometer: Huger-STR918, WGR918
@@ -761,7 +750,7 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
       if(id == 0x3A0D || id == 0x1984 || id == 0x1994 ) {
         if ( checksum(1,9,osdata[9]) !=0) {
             //Serial.print("CRC Error, "); 
-            break;
+            return false;
         }
         wdir = ((osdata[5]>>4) * 100)  + ((osdata[5] & 0x0F * 10) ) + (osdata[4] >> 4);    
         wspeed = ((osdata[7] & 0x0F) * 100)  + ((osdata[6]>>4) * 10)  + ((osdata[6] & 0x0F)) ;
@@ -769,24 +758,24 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon Wind2;");                   // Label
-        sprintf(buffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( buffer );
-        sprintf(buffer, "WDIR=%04x;", wdir);     
-        Serial.print( buffer );
-        sprintf(buffer, "WINSP=%04x;", wspeed);     
-        Serial.print( buffer );
-        sprintf(buffer, "AWINSP=%04x;", awspeed);     
-        Serial.print( buffer );
+        Serial.print(F("Oregon Wind2;"));                   // Label
+        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "WDIR=%04x;", wdir);     
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "WINSP=%04x;", wspeed);     
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "AWINSP=%04x;", awspeed);     
+        Serial.print( pbuffer );
         if ((osdata[3] & 0x0F) >= 4) {
-           Serial.print("BAT=LOW;"); 
+           Serial.print(F("BAT=LOW;")); 
         } else {        
-           Serial.print("BAT=OK;"); 
+           Serial.print(F("BAT=OK;")); 
         }        
-        Serial.println();                      
+        Serial.println();      
 	  } else
       // ==================================================================================
       // ea7c  UV Sensor: UVN128, UV138
@@ -799,20 +788,20 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon UVN128/138;");              // Label
-        sprintf(buffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( buffer );
-        sprintf(buffer, "UV=%04x;", uv);     
-        Serial.print( buffer );
+        Serial.print(F("Oregon UVN128/138;"));           // Label
+        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "UV=%04x;", uv);     
+        Serial.print( pbuffer );
         if ((osdata[3] & 0x0F) >= 4) {
-           Serial.print("BAT=LOW;"); 
+           Serial.print(F("BAT=LOW;")); 
         } else {        
-           Serial.print("BAT=OK;"); 
+           Serial.print(F("BAT=OK;")); 
         }        
-        Serial.println();                
+        Serial.println();    
       } else
       // ==================================================================================
       // da78  UV Sensor: UVN800
@@ -824,18 +813,18 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon UVN800;");                  // Label
-        sprintf(buffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( buffer );
-        sprintf(buffer, "UV=%04x;", uv);     
-        Serial.print( buffer );
+        Serial.print(F("Oregon UVN800;"));               // Label
+        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
+        Serial.print( pbuffer );
+        sprintf(pbuffer, "UV=%04x;", uv);     
+        Serial.print( pbuffer );
         if ((osdata[3] & 0x0F) >= 4) {
-           Serial.print("BAT=LOW;"); 
+           Serial.print(F("BAT=LOW;")); 
         } else {        
-           Serial.print("BAT=OK;"); 
+           Serial.print(F("BAT=OK;")); 
         }        
         Serial.println();     
       } else
@@ -885,16 +874,15 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon Unknown;DEBUG=");                   // Label
+        Serial.print(F("Oregon Unknown;DEBUG="));                 // Label
         for(byte x=0; x<13;x++) {
            Serial.print( osdata[x],HEX ); 
            Serial.print((" ")); 
         }
         Serial.println(";");  
-        break;
       } else  
       // ==================================================================================
       // 0x1a* / 0x2a* 0x3a** Power meter: OWL CM119
@@ -912,26 +900,25 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon Unknown;DEBUG=");                   // Label
+        Serial.print(F("Oregon Unknown;DEBUG="));                // Label
         for(byte x=0; x<13;x++) {
            Serial.print( osdata[x],HEX ); 
            Serial.print((" ")); 
         }
         Serial.println(";");  
-        break;
       } else    
       // ==================================================================================
       if( (id&0xf00)==0xA00 ) { // Any Oregon sensor with id xAxx 
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( buffer );
+        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+        Serial.print( pbuffer );
         // ----------------------------------
-        Serial.print("Oregon Unknown;DEBUG=");                   // Label
+        Serial.print(F("Oregon Unknown;DEBUG="));                // Label
         for(byte x=0; x<13;x++) {
            Serial.print( osdata[x],HEX ); 
            Serial.print((" ")); 
@@ -942,10 +929,6 @@ boolean Plugin_048(byte function, struct NodoEventStruct *event, char *string)
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet 
       RawSignal.Number=0;
       success = true;
-      break;
-    }
 #endif // PLUGIN_048_CORE
-  }      
   return success;
 }
-

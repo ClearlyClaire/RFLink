@@ -42,34 +42,25 @@
  * 20;1F;DEBUG;Pulses=74;Pulses(uSec)=550,1575,525,675,525,1625,500,700,475,725,500,1675,500,700,500,725,475,1675,475,750,450,750,475,725,450,750,450,750,475,750,450,750,475,1675,450,1700,425,1700,450,750,450,750,450,1700,450,1700,450,775,450,1700,450,1700,450,1700,425,1700,425,775,450,775,450,775,425,775,425,775,425,775,450,775,425,775,425,
  \*********************************************************************************************/
 #define PLUGIN_ID 46
-#define PLUGIN_NAME "AuriolV2"
+#define AURIOLV2_PULSECOUNT 74
 
-#define AURIOL_PULSECOUNT 74
-
-boolean Plugin_046(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_046(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_046_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
-      if (RawSignal.Number != AURIOL_PULSECOUNT) return false;
-
-      unsigned long bitstream1=0;
-      unsigned long bitstream2=0;
+      if (RawSignal.Number != AURIOLV2_PULSECOUNT) return false;
+      unsigned long bitstream1=0L;
+      unsigned long bitstream2=0L;
       byte rc=0;
       byte bat=0;
       int temperature=0;
       int humidity=0;
       byte channel=0;
-	  int bitcounter=0;
-      char buffer[14]=""; 
+	  byte bitcounter=0;
       byte type=0;
       //==================================================================================
       // get all the bits we need (36 bits)
-      for(int x=2;x<RawSignal.Number;x+=2) {
+      for(int x=2;x < AURIOLV2_PULSECOUNT;x+=2) {
          if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 700) return false;
          if (RawSignal.Pulses[x]*RawSignal.Multiply > 1400) {
             if (RawSignal.Pulses[x]*RawSignal.Multiply > 2000) return false;
@@ -91,20 +82,18 @@ boolean Plugin_046(byte function, struct NodoEventStruct *event, char *string)
          }
       }
       //==================================================================================
-      // First perform sanity checks
-      if (bitstream1==0) return false;
-      if (bitstream2==0) return false;      
+      if (bitstream1==0) return false;              // Perform sanity check
+      if (bitstream2==0) return false;              // Perform sanity check
       if ((bitstream2 & 0xF00) != 0xF00) return false; // check if 'E' has all 4 bits set
       if ((bitstream2 & 0xfff) != 0xF00) { 
          type=1;                                    // Xiron
-         if (RawSignal.Pulses[0] != PLUGIN_ID) {
-            //Serial.println("Xiron ID error");
-            return false; // only accept plugin_001 translated Xiron packets
+         if (RawSignal.Pulses[0] != PLUGIN_ID) {    
+            return false;                           // only accept plugin_001 translated Xiron packets
          }
       } else {
          type=0;                                    // Auriol
-         rc = (bitstream1 >> 12) & 0x07;            // get 3 bits, should always be 000
-         if (rc != 0) return false; 
+         rc = (bitstream1 >> 12) & 0x07;            // get 3 bits
+         if (rc != 0) return false;                 // should always be '000'
       }
       //==================================================================================
       bat= (bitstream1 >> 15) & 0x01;               // get battery strength indicator
@@ -113,43 +102,43 @@ boolean Plugin_046(byte function, struct NodoEventStruct *event, char *string)
       temperature = (bitstream1) & 0xfff;           // get 12 temperature bits
       if (temperature > 3000) {
          temperature=4096-temperature;              // fix for minus temperatures
+         if (temperature > 0x258) return false;     // temperature out of range ( > -60.0 degrees) 
          temperature=temperature | 0x8000;          // turn highest bit on for minus values
-      }      
+      } else {      
+         if (temperature > 0x258) return false;     // temperature out of range ( > 60.0 degrees) 
+      }
       if (type == 1) {
          humidity = (bitstream2) & 0xff ;           // humidity
       }
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+      Serial.print( pbuffer );
       // ----------------------------------
       if (type == 0) {
-         Serial.print("Auriol V2;");                // Label
+         Serial.print(F("Auriol V2;"));             // Label
       } else {
-         Serial.print("Xiron;");                    // Label
+         Serial.print(F("Xiron;"));                 // Label
       }
-      sprintf(buffer, "ID=%02x%02x;", rc, channel); // ID (rc+channel)
-      Serial.print( buffer );
-      sprintf(buffer, "TEMP=%04x;", temperature);     
-      Serial.print( buffer );
+      sprintf(pbuffer, "ID=%02x%02x;", rc, channel); // ID (rc+channel)
+      Serial.print( pbuffer );
+      sprintf(pbuffer, "TEMP=%04x;", temperature);     
+      Serial.print( pbuffer );
       if (type == 1) {
-         sprintf(buffer, "HUM=%02d;", humidity);     
-         Serial.print( buffer );
+         sprintf(pbuffer, "HUM=%02d;", humidity);     
+         Serial.print( pbuffer );
       }
       if (bat==0) {                                 // battery status
-         Serial.print("BAT=LOW;");
+         Serial.print(F("BAT=LOW;"));
       } else {
-         Serial.print("BAT=OK;");
+         Serial.print(F("BAT=OK;"));
       }
       Serial.println();
       //==================================================================================
       RawSignal.Repeats=true;                       // suppress repeats of the same RF packet 
       RawSignal.Number=0;
       success = true;
-      break;
-    }
 #endif // PLUGIN_046_CORE
-  }      
   return success;
 }

@@ -16,7 +16,7 @@
  * Changelog: v1.0 initial release
  *********************************************************************************************
  * Technical information:
- * Decodes signals from a LaCrosse Weatherstation outdoor unit, (44 pulses, 44/46 bits, 433 MHz).
+ * Decodes signals from a LaCrosse Weatherstation outdoor unit, (88 pulses, 44 bits, 433 MHz).
  *
  * Temperature sensor (TX3)
  * Each frame is 44 bits long. It is composed of: 
@@ -38,6 +38,10 @@
  * Checksum: (0 + A + 0 + 0 + E + 7 + 3 + 1 + 7 + 3) and F = D   D 
  * Sample:
  * 20;11;DEBUG;Pulses=88;Pulses(uSec)=1200,875,1125,875,1125,875,1125,900,400,900,1150,875,400,900,1150,875,1125,875,1125,875,1150,875,1150,875,400,900,400,875,375,900,1150,875,1125,875,400,900,1150,875,1125,875,1125,875,400,900,400,875,1125,900,400,875,1150,875,1150,900,1125,875,1150,875,400,900,400,875,400,900,1150,875,400,900,400,875,1125,875,400,900,1150,900,1125,875,1150,875,375,900,400,900,400,900,400;
+ * 20;9E;DEBUG;Pulses=88;Pulses(uSec)=1300,925,1225,925,1225,925,1200,925,425,925,1225,925,425,925,1225,925,1225,925,1225,925,1225,925,1225,925,1225,925,425,925,1225,925,1225,925,1225,925,425,925,425,925,1225,925,1225,925,425,925,425,925,425,925,1225,925,425,925,425,925,1225,925,425,925,1225,925,1225,925,1225,925,1225,925,425,925,425,925,425,925,1200,925,425,925,425,925,1225,925,1225,925,425,925,425,925,1225;
+ * 20;9F;LaCrosse;ID=0403;TEMP=010c;
+ * 20;A1;DEBUG;Pulses=88;Pulses(uSec)=1325,925,1225,925,1225,925,1225,925,425,925,1225,925,425,925,1225,925,425,925,425,925,425,925,1225,925,1225,925,425,925,1225,925,1225,925,1225,925,425,925,425,925,1225,925,1225,925,425,925,1225,925,425,925,1225,925,425,950,425,925,1225,925,1225,925,1225,925,1225,925,1225,925,1225,925,425,925,1225,925,425,925,1200,925,425,925,425,925,1225,925,425,925,1225,925,1225,925,1225;
+ * 20;A2;LaCrosse;ID=0403;HUM=56;
  * --------------------------------------------------------------------------------------------
  * Rain Packet:
  * Each frame is 46 bits long. It is composed of: 
@@ -78,46 +82,36 @@
  * RAIN D = 
  * WIND d = Wind direction (0-16 in 22.5 degrees steps) D= wind speed
   \*********************************************************************************************/
-#define PLUGIN_ID 43
-#define PLUGIN_NAME "LaCrosse"
-
 #define LACROSSE_PULSECOUNT 88
 
-boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_043(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_043_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
       if ( (RawSignal.Number < LACROSSE_PULSECOUNT - 4) || (RawSignal.Number > LACROSSE_PULSECOUNT + 4) ) return false; 
-      //if (RawSignal.Number != LACROSSE_PULSECOUNT) return false; 
-      unsigned long bitstream1=0;                   // holds first 10 bits 
-      unsigned long bitstream2=0;                   // holds last 26 bits
+      unsigned long bitstream1=0L;                  // holds first 16 bits 
+      unsigned long bitstream2=0L;                  // holds last 28 bits
 
       int temperature=0;
       int humidity=0;
       byte checksum=0;
-      byte data[10];
-      byte parity=0;
+      //byte parity=0;
       byte bitcounter=0;                            // counts number of received bits (converted from pulses)
-      char buffer[11]=""; 
+      byte data[10];
       //==================================================================================
       // get bytes 
       for(int x=1;x<RawSignal.Number;x+=2) {
          if (RawSignal.Pulses[x]*RawSignal.Multiply > 750) {
             if (bitcounter < 16) {
                bitstream1 = (bitstream1 << 1);
-               bitcounter++;                     // only need to count the first 10 bits
+               bitcounter++;                     // only need to count the first 16 bits
             } else {
                bitstream2 = (bitstream2 << 1);
             }
          } else {
             if (bitcounter < 16) {
                bitstream1 = (bitstream1 << 1) | 0x1; 
-               bitcounter++;                     // only need to count the first 10 bits
+               bitcounter++;                     // only need to count the first 16 bits
             } else {
                bitstream2 = (bitstream2 << 1) | 0x1; 
             }
@@ -138,6 +132,7 @@ boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
       data[8] = (bitstream2 >>  8) & 0x0f;
       data[9] = (bitstream2 >>  4) & 0x0f;
       //==================================================================================
+      if ( (data[0] != 0x00) || (data[1] != 0x0a) ) return false;
       //parity=data[4] & 1; // no check of parity for now
       // first perform a checksum check to make sure the packet is a valid LaCrosse packet
       for (byte i=0;i<10;i++){ 
@@ -148,13 +143,13 @@ boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
       //==================================================================================
       // Prevent repeating signals from showing up, skips every second packet!
       //==================================================================================
-      if(!RawSignal.RepeatChecksum && (SignalHash!=SignalHashPrevious || RepeatingTimer<millis())) {
+      unsigned long tempval=(data[4])>>1;
+      tempval=((tempval)<<16)+((data[3])<<8)+data[2];
+      if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer<millis()) || (SignalCRC != tempval)  ){ 
          // not seen this RF packet recently
+         SignalCRC=tempval;
       } else {
-         if (data[2]== 0x00) {
-            RawSignal.Number=0;
-            return true;         // already seen the RF packet recently, but still want the humidity
-         }
+         return true;         // already seen the RF packet recently, but still want the humidity
       }  
       //==================================================================================
       // Only accept temp and humidity packets for now, we need test data for other packet types
@@ -164,49 +159,48 @@ boolean Plugin_043(byte function, struct NodoEventStruct *event, char *string)
       //==================================================================================
       // Output
       // ----------------------------------
-      if (data[2]== 0x00) {
-         sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-         Serial.print( buffer );
-         Serial.print("LaCrosse;");                       // Label
-         sprintf(buffer, "ID=%02x%02x;", data[0], data[1]); // ID    
-         Serial.print( buffer );
+      if (data[2] == 0x00) {
+         sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+         Serial.print( pbuffer );
+         Serial.print(F("LaCrosse;"));                    // Label
+
+         //sprintf(pbuffer, "ID=%02x%02x;", data[3], (data[4])>>1); // ID    
+         //Serial.print( pbuffer );
+         data[4]=(data[4])>>1;
+         Serial.print(F("ID="));                    // Label
+         PrintHex8( data+3,1);
+         PrintHex8( data+4,1);
+
          temperature = data[5]*100;
          temperature = temperature + data[6]*10;
          temperature = temperature + data[7];
          temperature = temperature-500;
-         sprintf(buffer, "TEMP=%04x;", temperature);     
-         Serial.print( buffer );
+         sprintf(pbuffer, ";TEMP=%04x;", temperature);     
+         Serial.print( pbuffer );
          RawSignal.Repeats=false; 
       } else
-      if (data[2]==0x0e) {
+      if (data[2] == 0x0e) {
          humidity=(data[5]*16)+data[6];
-         if (data[2]==0x0e && humidity==0) return false; // humidity should not be 0
-         sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-         Serial.print( buffer );
-         Serial.print("LaCrosse;");                       // Label
-         sprintf(buffer, "ID=%02x%02x;", data[0], data[1]); // ID    
-         Serial.print( buffer );
-         sprintf(buffer, "HUM=%02x;", humidity);     
-         Serial.print( buffer );
+         if (data[2]==0x0e && humidity==0) return false;  // humidity should not be 0
+         sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+         Serial.print( pbuffer );
+         Serial.print(F("LaCrosse;"));                    // Label
+
+         //sprintf(pbuffer, "ID=%02x%02x;", data[3], (data[4])>>1 ); // ID    
+         //Serial.print( pbuffer );
+         data[4]=(data[4])>>1;
+         Serial.print(F("ID="));                    // Label
+         PrintHex8( data+3,1);
+         PrintHex8( data+4,1);
+
+         sprintf(pbuffer, ";HUM=%02x;", (humidity)&0xff);     
+         Serial.print( pbuffer );
          RawSignal.Repeats=true;
-      } else {
-         sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-         Serial.print( buffer );
-         Serial.print("LaCrosse Unknown;");                       // Label
-         Serial.print("DEBUG=");
-         for (byte i=0;i<10;i++){
-            sprintf(buffer, "%02x ", data[i]);     
-            Serial.print( buffer );
-         }
-         Serial.print(";");
       }
       Serial.println();
       //==================================================================================
       RawSignal.Number=0;
       success=true;
-      break;
-    }
 #endif // PLUGIN_043_CORE
-  }      
   return success;
 }

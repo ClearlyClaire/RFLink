@@ -3,7 +3,7 @@
 //##                                      Plugin-060 AlarmSensor                                       ##
 //#######################################################################################################
 /*********************************************************************************************\
- * This protocol provides support for some Alarm sensors that are part of a Varel alarm
+ * This protocol provides support for some Alarm sensors that are part of a Varel/Chubb/Ajax alarm
  * 
  * Author             : StuntTeam
  * Support            : http://sourceforge.net/projects/rflink/
@@ -24,66 +24,53 @@
  * 1001101010101010 01100110
  * 10000000 1010
  \*********************************************************************************************/
-#define PLUGIN_ID 060
-#define PLUGIN_NAME "AlarmPIR"
 #define ALARMPIRV2_PULSECOUNT 26
 
-boolean Plugin_060(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_060(byte function, char *string) {
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_060_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
+      if (RawSignal.Number != ALARMPIRV2_PULSECOUNT) return false;
       unsigned long bitstream=0L;
       byte data[3];
-      char buffer[11]=""; 
-      //==================================================================================
-      if (RawSignal.Number != ALARMPIRV2_PULSECOUNT) return false;
-      if (RawSignal.Pulses[1]*RawSignal.Multiply > 550) return false;    // First pulse is start bit and should be short!
-      for(byte x=2;x<RawSignal.Number;x=x+2) {
-          if (RawSignal.Pulses[x]*RawSignal.Multiply > 700) { // long pulse
-             if (RawSignal.Pulses[x]*RawSignal.Multiply > 1000) return false;
-             if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 700) return false; // invalid manchestercode
+      if (RawSignal.Pulses[1]*RawSignal.Multiply > 550) return false;          // First pulse is start bit and should be short!
+      for(byte x=2;x < ALARMPIRV2_PULSECOUNT;x=x+2) {
+          if (RawSignal.Pulses[x]*RawSignal.Multiply > 700) {                  // long pulse 800-875 (700-1000 accepted)
+             if (RawSignal.Pulses[x]*RawSignal.Multiply > 1000) return false;  // pulse too long
+             if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 700) return false; // invalid manchester code
              bitstream = bitstream << 1;
-          } else { // short pulse
-             if (RawSignal.Pulses[x]*RawSignal.Multiply < 250) return false;  // too short
-             if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 700) return false; // invalid manchestercode
+          } else {                                                             // short pulse 350-425 (250-550 accepted)
+             if (RawSignal.Pulses[x]*RawSignal.Multiply < 250) return false;   // pulse too short 
+             if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 700) return false; // invalid manchester code
              bitstream = (bitstream << 1) | 0x1; 
           }
       }
       //==================================================================================
       // Prevent repeating signals from showing up
       //==================================================================================
-      if(!RawSignal.RepeatChecksum && (SignalHash!=SignalHashPrevious || RepeatingTimer<millis())) {
+      if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer+2000<millis()) ){ 
          // not seen the RF packet recently
+         if (bitstream == 0) return false;
       } else {
          // already seen the RF packet recently
          return true;
       }       
       //==================================================================================
-      if (bitstream == 0) return false;
-      //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( buffer );
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+      Serial.print( pbuffer );
       // ----------------------------------
-      Serial.print("X10;");                         // Label
-      sprintf(buffer, "ID=%04x;", bitstream);
-      Serial.print( buffer );
-      Serial.print("SWITCH=01;");
-      Serial.print("CMD=ON;");                      // this device does report movement only
+      Serial.print(F("X10;"));                      // Label
+      sprintf(pbuffer, "ID=%04x;", (bitstream)&0xffff);
+      Serial.print( pbuffer );
+      Serial.print(F("SWITCH=01;"));
+      Serial.print(F("CMD=ON;"));                   // this device does report movement only
       Serial.println();
       //==================================================================================
       RawSignal.Repeats=true;                       // suppress repeats of the same RF packet
       RawSignal.Number=0;
-      return true;
-      break;
-    }
+      success=true;
 #endif // PLUGIN_060_CORE
-  }      
   return success;
 }

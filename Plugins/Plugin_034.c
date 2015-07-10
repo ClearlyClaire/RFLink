@@ -21,26 +21,18 @@
  * Thermo/Hygro: 10 bytes, seen as 128, 132, 134, 136, 138 pulses
  * Anemometer:   14 bytes
  * UV Index:     11 bytes
- * Rain:          9 bytes, seen as 136 pulses
+ * Rain:          9 bytes, seen as 132, 136 pulses
  \*********************************************************************************************/
-#define PLUGIN_ID 34
-#define PLUGIN_NAME "Cresta"
-
-#define CRESTA_MIN_PULSECOUNT 126 // unknown until we have a collection of all packet types but this seems to be the minimum
+#define CRESTA_MIN_PULSECOUNT 124 // unknown until we have a collection of all packet types but this seems to be the minimum
 #define CRESTA_MAX_PULSECOUNT 284 // unknown until we have a collection of all packet types
 
 byte Plugin_034_reverseBits(byte data);
 byte Plugin_034_WindDirSeg(byte data);
 
-boolean Plugin_034(byte function, struct NodoEventStruct *event, char *string)
-{
+boolean Plugin_034(byte function, char *string){
   boolean success=false;
 
-  switch(function)
-  {
 #ifdef PLUGIN_034_CORE
-  case PLUGIN_RAWSIGNAL_IN:
-    {
       if (RawSignal.Number < CRESTA_MIN_PULSECOUNT || RawSignal.Number > CRESTA_MAX_PULSECOUNT ) return false; 
 
       int sensor_data=0;
@@ -51,7 +43,6 @@ boolean Plugin_034(byte function, struct NodoEventStruct *event, char *string)
       int winddirection=0;
       int uv=0;
     
-      byte minus=0;
       byte checksum=0;
       byte data[18];
       byte length=0;
@@ -64,7 +55,6 @@ boolean Plugin_034(byte function, struct NodoEventStruct *event, char *string)
       int pulseposition=1;                          // first pulse is always empty
       byte halfbit=0;                               // high pulse = 1, 2 low pulses = 0, halfbit keeps track of low pulses
       byte parity=0;                                // to calculate byte parity
-      char buffer[16]=""; 
       // ==================================================================================
       // get bytes and determine if byte parity is set correctly for the cresta protocol on the fly
       do {
@@ -109,7 +99,7 @@ boolean Plugin_034(byte function, struct NodoEventStruct *event, char *string)
             }
          }
          pulseposition++;                           // point to next pulse
-         if (pulseposition > RawSignal.Number) break; // end when no more pulses
+         if (pulseposition > RawSignal.Number) break; // reached the end? done processing
       } while(bytecounter < 16);                    // receive maximum number of bytes from pulses
       // ==================================================================================
       // all bytes received, make sure checksum is okay
@@ -121,7 +111,7 @@ boolean Plugin_034(byte function, struct NodoEventStruct *event, char *string)
       length=data[2] & 0x3f;                        // drop bits 6 and 7
       length >>= 1;                                 // drop bit 0
       if (length > 20) return false;                // Additional check for illegal packet lengths to protect against false positives.
-      
+      if (length == 0) return false;                // Additional check for illegal packet lengths to protect against false positives.
       // Checksum: XOR of all bytes from byte 1 till byte length+2, should result in 0
       checksum=0;
       for (byte i=1;i< length+2 ;i++){              
@@ -137,10 +127,23 @@ boolean Plugin_034(byte function, struct NodoEventStruct *event, char *string)
       if ( data[1] > 0x7f && data[1] < 0xa0) channel=1; // no channel settings on Anemometer/rainmeter and uvsensor
       if ( data[1] > 0x9f && data[1] < 0xc0) channel=4;
       if ( data[1] > 0xbf && data[1] < 0xE0) channel=5;
+      data[3]=(data[3])&0x1f;
+      //==================================================================================
+      // Prevent repeating signals from showing up
+      //==================================================================================
+      unsigned long tempval=data[3];
+      tempval=((tempval)<<16)+((data[1])<<8)+channel;
+      if(SignalHash!=SignalHashPrevious || (RepeatingTimer<millis() && SignalCRC != tempval) || (SignalCRC != tempval) ) { 
+         // not seen the RF packet recently
+         SignalCRC=tempval;
+      } else {
+         // already seen the RF packet recently
+         return true;
+      }      
+      // ----------------------------------
       battery=(data[2])>>6;
       // ----------------------------------
-      if ((data[3]&0x1f) == 0x0c ) { // Anemometer
-       
+      if (data[3] == 0x0c ) { // Anemometer
          units=((data[4]>>4)*10) + (data[4]&0x0f) ;
          sensor_data=((data[5]&0x3f) * 100) + units;
          if ((data[5] & 0x80) != 0x80) {
@@ -155,7 +158,7 @@ boolean Plugin_034(byte function, struct NodoEventStruct *event, char *string)
          }
 		 windchill=sensor_data;
 
-		 windspeed=((data[9]&0x0F)*100)+((data[8]>>4)*10)+data[8]&0x0F;
+		 windspeed=((data[9]&0x0F)*100) + ((data[8]>>4)*10) + (data[8]&0x0F);
 		 windgust=((data[10]>>4)*100) + ((data[10]&0x0F)*10) + (data[9]>>4);
 
          //windspeed = (data[9] << 8) + data[8];
@@ -168,32 +171,32 @@ boolean Plugin_034(byte function, struct NodoEventStruct *event, char *string)
          //==================================================================================
          // Output
          // ----------------------------------
-         sprintf(buffer, "20;%02X;", PKSequenceNumber++);   // Node and packet number 
-         Serial.print( buffer );
+         sprintf(pbuffer, "20;%02X;", PKSequenceNumber++);   // Node and packet number 
+         Serial.print( pbuffer );
          // ----------------------------------
-         Serial.print("Cresta;");                           // Label
-         sprintf(buffer, "ID=%02x%02x;", data[1], channel); // ID    
-         Serial.print( buffer );
-         sprintf(buffer, "WINDIR=%04x;", winddirection);     
-         Serial.print( buffer );
-         sprintf(buffer, "WINSP=%04x;", windspeed);     
-         Serial.print( buffer );
-         sprintf(buffer, "WINGS=%04x;", windgust);     
-         Serial.print( buffer );
-         sprintf(buffer, "WINTMP=%04x;", windtemp);
-         Serial.print( buffer );
-         sprintf(buffer, "WINCHL=%04x;", windchill);     
-         Serial.print( buffer );
+         Serial.print(F("Cresta;"));                        // Label
+         sprintf(pbuffer, "ID=%02x%02x;", data[1], channel); // ID    
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "WINDIR=%04x;", winddirection);     
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "WINSP=%04x;", windspeed);     
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "WINGS=%04x;", windgust);     
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "WINTMP=%04x;", windtemp);
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "WINCHL=%04x;", windchill);     
+         Serial.print( pbuffer );
          if ( battery != 0) {
-            Serial.print("BAT=OK;");                           // Label
+            Serial.print(F("BAT=OK;"));                       // Label
          } else {
-            Serial.print("BAT=LOW;");                           // Label
+            Serial.print(F("BAT=LOW;"));                      // Label
          }
          Serial.println();
          //==================================================================================
       } else
       // ----------------------------------
-      if ((data[3]&0x1f) == 0x0d ) { // UV Sensor
+      if (data[3] == 0x0d ) { // UV Sensor
          units=((data[4]>>4)*10) + (data[4]&0x0f) ;
          sensor_data=((data[5]&0x3f) * 100) + units;
          if ((data[5] & 0x80) != 0x80) {
@@ -204,26 +207,26 @@ boolean Plugin_034(byte function, struct NodoEventStruct *event, char *string)
          //==================================================================================
          // Output
          // ----------------------------------
-         sprintf(buffer, "20;%02X;", PKSequenceNumber++);   // Node and packet number 
-         Serial.print( buffer );
+         sprintf(pbuffer, "20;%02X;", PKSequenceNumber++);   // Node and packet number 
+         Serial.print( pbuffer );
          // ----------------------------------
-         Serial.print("Cresta;");                           // Label
-         sprintf(buffer, "ID=%02x%02x;", data[1], channel); // ID    
-         Serial.print( buffer );
-         sprintf(buffer, "TEMP=%04x;", sensor_data);     
-         Serial.print( buffer );
-         sprintf(buffer, "UV=%04x;", uv);     
-         Serial.print( buffer );
+         Serial.print(F("Cresta;"));                        // Label
+         sprintf(pbuffer, "ID=%02x%02x;", data[1], channel); // ID    
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "TEMP=%04x;", sensor_data);     
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "UV=%04x;", uv);     
+         Serial.print( pbuffer );
          if ( battery != 0) {
-            Serial.print("BAT=OK;");                           // Label
+            Serial.print(F("BAT=OK;"));                     // Label
          } else {
-            Serial.print("BAT=LOW;");                           // Label
+            Serial.print(F("BAT=LOW;"));                    // Label
          }
          Serial.println();
          //==================================================================================
       } else                                        // 9F 80 CC 4E 00 00 66 64 
       // ----------------------------------         // 9f 80 cc 4e 01 00 66 65 
-      if ((data[3]&0x1f) == 0x0e ) { // Rain meter  // 9F 80 CC 4E 76 00 66 12 
+      if (data[3] == 0x0e ) { // Rain meter  // 9F 80 CC 4E 76 00 66 12 
          sensor_data = (data[5]<<8)+data[4];        // 80=rain 4e=>0E = rain
          sensor_data=sensor_data*7;                 // 66 = always 66    rain * 0.7 = mm.
          // sensor data is in units. each unit is 0,7 mm. 
@@ -236,28 +239,24 @@ boolean Plugin_034(byte function, struct NodoEventStruct *event, char *string)
          //==================================================================================
          // Output
          // ----------------------------------
-         sprintf(buffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-         Serial.print( buffer );
+         sprintf(pbuffer, "20;%02X;", PKSequenceNumber++);    // Node and packet number 
+         Serial.print( pbuffer );
          // ----------------------------------
-         Serial.print("Cresta;");                    // Label
-         sprintf(buffer, "ID=%02x%02x;", data[1], channel); // ID    
-         Serial.print( buffer );
-         sprintf(buffer, "RAIN=%04x;", sensor_data);     
-         Serial.print( buffer );
-         //sprintf(buffer, "%02x%02x%02x%02x%02x;", data[0],data[1],data[2],data[3],data[4]);     
-         //Serial.print( buffer );
-         //sprintf(buffer, "%02x%02x%02x%02x%02x;", data[5],data[6],data[7],data[8],data[9]);     
-         //Serial.print( buffer );
+         Serial.print(F("Cresta;"));                         // Label
+         sprintf(pbuffer, "ID=%02x%02x;", data[1], channel);  // ID    
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "RAIN=%04x;", sensor_data);     
+         Serial.print( pbuffer );
          if ( battery != 0) {
-            Serial.print("BAT=OK;");                           // Label
+            Serial.print(F("BAT=OK;"));                       // Label
          } else {
-            Serial.print("BAT=LOW;");                           // Label
+            Serial.print(F("BAT=LOW;"));                      // Label
          }
          Serial.println();
          //==================================================================================
       } else
       // ----------------------------------
-      if ((data[3]&0x1f) == 0x1e ) { // Thermo/Hygro
+      if (data[3] == 0x1e ) { // Thermo/Hygro
          units=((data[4]>>4)*10) + (data[4]&0x0f) ;
          sensor_data=((data[5]&0x3f) * 100) + units;
          if ((data[5] & 0x80) != 0x80) {
@@ -266,33 +265,42 @@ boolean Plugin_034(byte function, struct NodoEventStruct *event, char *string)
          //==================================================================================
          // Output
          // ----------------------------------
-         sprintf(buffer, "20;%02X;", PKSequenceNumber++);   // Node and packet number 
-         Serial.print( buffer );
+         sprintf(pbuffer, "20;%02X;", PKSequenceNumber++);   // Node and packet number 
+         Serial.print( pbuffer );
          // ----------------------------------
-         Serial.print("Cresta;");                           // Label
-         sprintf(buffer, "ID=%02x%02x;", data[1], channel); // ID    
-         Serial.print( buffer );
-         sprintf(buffer, "TEMP=%04x;", sensor_data);     
-         Serial.print( buffer );
-         sprintf(buffer, "HUM=%02x;", data[6]);     
-         Serial.print( buffer );
+         Serial.print(F("Cresta;"));                        // Label
+         sprintf(pbuffer, "ID=%02x%02x;", data[1], channel); // ID    
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "TEMP=%04x;", sensor_data);     
+         Serial.print( pbuffer );
+         sprintf(pbuffer, "HUM=%02x;", data[6]);     
+         Serial.print( pbuffer );
          if ( battery != 0) {
-            Serial.print("BAT=OK;");                           // Label
+            Serial.print(F("BAT=OK;"));                     // Label
          } else {
-            Serial.print("BAT=LOW;");                           // Label
+            Serial.print(F("BAT=LOW;"));                    // Label
          }
          Serial.println();
          //==================================================================================
       } else {
-         break;                                   // unsupported Cresta packet?
+         //==================================================================================
+         // Output
+         // ----------------------------------
+         sprintf(pbuffer, "20;%02X;", PKSequenceNumber++);   // Node and packet number 
+         Serial.print( pbuffer );
+         // ----------------------------------
+         Serial.print(F("Cresta;DEBUG;"));                        // Label
+         sprintf(pbuffer, "ID=%02x%02x;", data[1], channel); // ID    
+         Serial.print( pbuffer );
+         PrintHex8( data, length+2);
+         Serial.print(F(";"));
+         Serial.println();
+         //==================================================================================
       }
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet 
       RawSignal.Number=0;
       success = true;
-      break;
-    }
 #endif // PLUGIN_034_CORE
-  }      
   return success;
 }
 
