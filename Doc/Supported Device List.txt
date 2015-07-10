@@ -3,29 +3,47 @@ Nodo - RFLink supported devices list
 ============================================================================
 Remote Controls and Electrical Switches / Dimmers etc.:
 -------------------------------------------------------
-Klik Aan Klik Uit (Code Wheel)                      (Send + Receive)
- - Princeton PT2262 / MOSDESIGN M3EB / Domia Lite / Klik-Aan-Klik-Uit / Intertechno)
- - CoCo Technologies / Cogex / D-IO (Chacon) / Nexa / Düwi Terminal
+ARC Protocol:                                       (Send + Receive)
+ - Klik Aan Klik Uit (Code Wheel)                   
+ - Princeton PT2262 
+ - MOSDESIGN M3EB 
+ - Domia Lite 
+ - Intertechno)
+ - CoCo Technologies 
+ - Cogex 
+ - D-IO (Chacon) 
+ - Nexa 
+ - Düwi Terminal
  - Promax RSL366T
+ - ME FLS 100 
  - Profile PR-44N, PR-47N
-    
-Klik Aan Klik Uit (Automatic Code Learning)         (Send + Receive)
+ - Sartano 2606
+ - Impuls
+ - Elro AB400
+ - Waveman
+ - Elro Home Comfort AB600
+ - (Elro) Home Control 
+ - Smarthome YC-4000B
+
+ Automatic Code Learning Protocols:                  (Send + Receive)
+- Klik Aan Klik Uit
   (among others: AWMR210, AWMT230, AWMD250, AWST8800)
+- Nexa Jula Anslut  
+- Home Easy EU
 
-- KAKU / Anslut     
-Home Easy (Code Wheel)                              (Send + Receive)	
-Flamingo FA500R/S/DSS/WD (Automatic Code Learning)  (Send + Receive)
--   SilverCrest 91210/60494 RCS AAA3680
--   Mumbi M-FS300
--   Unitec 48110 EIM 826 / 48111 EIM 821
--   Quigg GT-1000 RC / Quigg GT-FSI-08 
-
-Elro Home Comfort AB600                             (Send + Receive)
-Intertek Eurodomest 972080(Automatic Code Learning) (Send + Receive)
-Blyss                                               (Send + Receive)
-Conrad RSL2                                         (Receive only)
-Kambrook RF3399/RF3405/RF3672/RF3689/RF4471R        (Receive only)
-X10 RF switches                                     (Send + Receive)    
+Others:                                             (Send + Receive)	
+- Home Easy (Code Wheel)                            
+- Flamingo FA500R/S/DSS/WD                          
+- SilverCrest 91210/60494 RCS AAA3680
+- Mumbi M-FS300
+- Unitec 48110 EIM 826 / 48111 EIM 821
+- Quigg GT-1000 RC / Quigg GT-FSI-08 
+- Intertek Eurodomest 972080                        
+- Blyss                                             
+- Conrad RSL2                                       
+- Kambrook RF3399/RF3405/RF3672/RF3689/RF4471R      
+- X10 RF switches                                   
+- Home Confort Smart Home - TEL-010 
 ============================================================================
 Weather Sensors:
 ----------------
@@ -68,12 +86,15 @@ Oregon V1/2/3:
 Window blinds/shutters/sun screens:
 -----------------------------------
 Kaku ASUN650
+
 ============================================================================
 Motion Detectors & Door/Window sensors:
 --------------------------------
-Low Budget Chinese PIR
-Ajax Chub Varel PIR
-KAKU AMST-606 door/window sensor
+Low Budget Chinese PIR (only signals motion detection)
+Low Budget Chinese Door/Window detectors 
+Ajax Chub Varel PIR (only signals motion detection)
+KAKU AMST-606 door/window sensor (separate signals for open and close)
+CHACON DIO 54781 (separate signals for open and close)
 ============================================================================
 Fireplace:
 ----------
@@ -86,15 +107,22 @@ Flamingo FA20RF                                                                (
 ============================================================================
 Doorbells:
 ----------
-SelectPlus (200689103 - Black - Datecode:0614), 1 by One, Delta (O00 QH-0031)  (Send + Receive)
-SelectPlus (200689101 - White - Datecode:0914)                                 (Send + Receive)
+SelectPlus (200689103 - Black - Date code:0614), 1 by One, Delta (O00 QH-0031) (Send + Receive)
+SelectPlus (200689101 - White - Date code:0914)                                (Send + Receive)
+Deltronic Wireless Doorbell                                                    (Send + Receive) 
+RL-02 Wireless Doorbell                                                        (Send + Receive) 
 Byron SX                                                                       (Send + Receive)
 Plieger York                                                                   (Receive) 
         Note that when the Plieger button is detected as Conrad RSL2, you need to use the button 
-        on the inside to change the address code of the Plieger.
+        on the inside of the Plieger doorbell to change the address code of the Plieger.
 ============================================================================
 Nodo Slave Sensors:
 -------------------
-Temperature, Humidity, UV, barometric Pressure, OpenTherm and any other kind 
-of Nodo sensor you want to include (let us know if it is not supported yet).
+Temperature, Humidity, UV, barometric Pressure sensors are supported when using 
+the following Nodo variable numbers:
+Variable 11, 12 en 13 : Temperature
+Variable 14           : Humidity
+Variable 15           : UV
+Variable 16           : Barometric pressure 
+If you require support for other sensors just let us know.
 ============================================================================
