@@ -1,5 +1,9 @@
 =====================================================================================================================================
-Arduino project "Nodo" © Copyright 2013 Paul Tonkes 
+Arduino project "Nodo Radio Frequency Link" aka "Nodo RFlink" 
+
+© Copyright 2015 Stuntteam
+
+Portions © Copyright 2010..2015 Paul Tonkes (original Nodo 3.7 code)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License 
 as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -7,26 +11,24 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 You received a copy of the GNU General Public License along with this program in file 'COPYING.TXT'.
 
-Voor toelichting op de licentievoorwaarden zie    : http://www.gnu.org/licenses
-Uitgebreide documentatie is te vinden op          : http://www.nodo-domotica.nl
-bugs kunnen worden gelogd op                      : https://code.google.com/p/arduino-nodo/
-Compiler voor deze programmacode te downloaden op : http://arduino.cc
-Voor vragen of suggesties, mail naar              : p.k.tonkes@gmail.com
-Compiler                                          : Arduino Compiler met minimaal versie 1.0.1
+License terms                                   : http://www.gnu.org/licenses
+Documentation                                   : http://sourceforge.net/projects/rflink/
+Questions/Suggestions etc. mail to              : frankzirrone@gmail.com
+Compiler                                        : http://arduino.cc
 =====================================================================================================================================
+
+All files should be located in a directory named "RFLink".
+Install the Arduino compiler. You can download the compiler at www.arduino.cc
+Open from the Arduino IDE the file RFlink.ino
 
 Alle bestanden dienen zich te bevinden in één directory met de
-naam "Nodo". Installeer de Arduino compiler. Deze is te downloaden 
-op www.arduino.cc Open vanuit de Arduino compiler de file Nodo.ino.
+naam "RFLink". Installeer de Arduino compiler. Deze is te downloaden 
+op www.arduino.cc Open vanuit de Arduino compiler de file RFLink.ino.
 
 =====================================================================================================================================
 
-Additional Note for Nodo RadioFrequencyLink aka Nodo RFLink: 
-
-This code is free for use in any open source project when the original copyright notices and headers are included.
- 
-Usage of any parts of this code in a commercial application is prohibited!
-
+The Nodo RadioFrequencyLink aka Nodo RFLink code is free for use in any open source project when the original copyright notices 
+and headers are included. Usage of any parts of this code in a commercial application is prohibited!
 
 =====================================================================================================================================
                      GNU GENERAL PUBLIC LICENSE
