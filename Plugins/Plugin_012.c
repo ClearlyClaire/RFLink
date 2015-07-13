@@ -78,6 +78,7 @@
 #define FA500RM1_PulseLength    58
 
 void Flamingo_Send(int funitc, int fcmd);
+void Tevion_Send(void);
 
 boolean Plugin_012(byte function, char *string) {
     boolean success=false;
@@ -227,7 +228,7 @@ boolean PluginTX_012(byte function, char *string) {
            if(c>='1' && c<='5'){Home=Home+c-'0';} 
            
            c=0;
-           c |= str2cmd(InputBuffer_Serial+19)==VALUE_OFF;          // ON/OFF command
+           c |= str2cmd(InputBuffer_Serial+20)==VALUE_OFF;          // ON/OFF command
            success=true;
            Flamingo_Send(bitstream, c);
         }

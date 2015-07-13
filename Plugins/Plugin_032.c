@@ -96,16 +96,18 @@ boolean Plugin_032(byte function, char *string) {
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++);// Node and packet number 
       Serial.print( pbuffer );
       // ----------------------------------
       Serial.print(F("Alecto V4;"));                   // Label
-      sprintf(pbuffer, "ID=%02x%02x;", rc, rc2);        // ID 
+      sprintf(pbuffer, "ID=%02x%02x;", rc, rc2);       // ID 
       Serial.print( pbuffer );
       sprintf(pbuffer, "TEMP=%04x;", temperature);     
       Serial.print( pbuffer );
-      sprintf(pbuffer, "HUM=%02d;", humidity);     
-      Serial.print( pbuffer );        
+      if (humidity < 99) {                             // Only report valid humidty values
+         sprintf(pbuffer, "HUM=%02d;", humidity);      // decimal value..
+         Serial.print( pbuffer );        
+      }
       Serial.println();
       //==================================================================================
       RawSignal.Repeats=true;                          // suppress repeats of the same RF packet

@@ -166,7 +166,7 @@ boolean Plugin_030(byte function, char *string)
             if (temperature > 0x258) return false;        // temperature out of range ( > 60.0 degrees) 
          }
          humidity = (16 * nibble7) + nibble6;
-         if (humidity > 99) return false;                 // Humidity out of range
+         if (humidity > 0x99) return false;               // Humidity out of range, assume ALL data is bad?
          //==================================================================================
          // Output
          // ----------------------------------
@@ -178,8 +178,10 @@ boolean Plugin_030(byte function, char *string)
          Serial.print( pbuffer );
          sprintf(pbuffer, "TEMP=%04x;", temperature);     
          Serial.print( pbuffer );
-         sprintf(pbuffer, "HUM=%02x;", humidity);     
-         Serial.print( pbuffer );
+         if (humidity < 0x99) {                          // Some AlectoV1 devices actually lack the humidity sensor and always report 99%
+            sprintf(pbuffer, "HUM=%02x;", humidity);     // Only report humidity when it is below 99%
+            Serial.print( pbuffer );                     
+         }
          if (battery==0) {          
             Serial.print("BAT=OK;");
          } else {

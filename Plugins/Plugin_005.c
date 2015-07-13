@@ -30,6 +30,36 @@
  * 1010010110010110011010011001011001100101101010100
  * 00110110100101101011 000 0
  * 01110001101100011111 000 0
+ 
+   010101011001010101100101101001100110010110101010
+   111101111011001010110000  <<   F7B2B 0
+   000010000100110101001111  
+  20;03;DEBUG;Pulses=50;Pulses(uSec)=
+  275,800,
+  200,800,
+  200,800,
+  175,800,
+  775,225,
+  175,800,
+  200,800,
+  200,800,
+  200,800,
+  775,225,
+  175,800,
+  175,800,
+  775,225,
+  775,225,
+  200,800,
+  775,225,
+  200,800,
+  775,225,
+  200,800,
+  200,800,
+  775,225,
+  775,225,
+  775,225,
+  775,225,
+  175;
  \*********************************************************************************************/
 #define EURODOMEST_PulseLength    50
 
@@ -40,7 +70,6 @@ boolean Plugin_005(byte function, char *string) {
     unsigned long bitstream=0;
   
     #ifdef PLUGIN_005_CORE
-      byte housecode=0;
       byte unitcode=0;
       byte command=0;
       unsigned long address=0;
@@ -77,16 +106,13 @@ boolean Plugin_005(byte function, char *string) {
       //if ( (address ) & 0xf0000 == 0xf0000) return false;   // Addresses with the highest 4 bits all set are not accepted 
       if (address==0) return false;                 // Address would never be 0 
       if (address==0xfffff) return false;           // Address would never be FFFFF
-      if (address > 0x0007FFFFL) return false;      // Address max. 19 bits
       // ----------------------------------
       unitcode=(( bitstream >> 1)& 0x7);
       command=((bitstream) & 0x01);              
       if (unitcode == 3) return false;              // invalid button code?
       if (unitcode == 4) unitcode--;                
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      
 //      if (unitcode == 5) return false;              // Note: unitcode 5 is present on the PCB and working but not used on any remotes.
       if (unitcode > 7) return false;               // invalid button code?
-      housecode=(address >> 16) &0xff;              
       //==================================================================================
       // Output
       // ----------------------------------
@@ -94,7 +120,7 @@ boolean Plugin_005(byte function, char *string) {
       Serial.print( pbuffer );
       // ----------------------------------
       Serial.print(F("Eurodomest;"));               // Label
-      sprintf(pbuffer, "ID=%02x%04x;", housecode, (address)&0xffff) ; // ID    
+      sprintf(pbuffer, "ID=%06lx;",(address)&0xffffff) ; // ID    
       Serial.print( pbuffer );
       sprintf(pbuffer, "SWITCH=%02x;", unitcode);    // ID    
       Serial.print( pbuffer );

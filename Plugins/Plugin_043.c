@@ -7,6 +7,7 @@
  * It also works for all non LaCrosse sensors that follow this protocol.
  * Lacrosse TX3-TH  Thermo/Humidity, Lacrosse TX4
  * WS7000-15: Anemometer, WS7000-16: Rain precipitation, WS2500-19: Brightness Luxmeter, WS7000-20: Thermo/Humidity/Barometer
+ * TFA 30.3125 (temperature + humidity), TFA 30.3120.90 (temperature)
  *
  * Author             : StuntTeam
  * Support            : http://sourceforge.net/projects/rflink/
@@ -25,17 +26,26 @@
  * • 1 block of four bits (checksum)
  * 
  * The active values of the frames are explained below: 
- * • a = Start sequence
- * • b = Type of measure (0=Thermo E=hygro) 
- * • c = Address of sensor 
- * • d = Parity bit  (c+d+e bits sum is even) 
- * • e = Measure  
- * • f = Checksum (Lower four bits of the sum of all words)
+ *
  * Example 
  * 0000 1010 0000 0000 1110 0111 0011 0001 0111 0011 1101 
- * aaaa aaaa bbbb cccc cccd eeee eeee eeee eeee eeee ffff
+ * aaaa aaaa bbbb cccc cccd eeee ffff gggg hhhh iiii jjjj
  * 0    A    0    0    7  0 7    3    1    7    3    D   
+ *
+ * • a = Start sequence (always 0000 1010)
+ * • b = Packet type (0=Thermo E=hygro) 
+ * • c = Address of sensor (changes when inserting batteries)
+ * • d = Parity bit  (c+d+e bits sum is even) 
+ * • e-i = Measured values:
+ *     e = tens (x 10)
+ *     f = ones (x 1) 
+ *     g = digits (x 0.1) (is zero in case of humidity)
+ *     h = copy of e value
+ *     i = copy of f value
+ * • j = Checksum (Lower four bits of the sum of all words)
+ * 
  * Checksum: (0 + A + 0 + 0 + E + 7 + 3 + 1 + 7 + 3) and F = D   D 
+ *
  * Sample:
  * 20;11;DEBUG;Pulses=88;Pulses(uSec)=1200,875,1125,875,1125,875,1125,900,400,900,1150,875,400,900,1150,875,1125,875,1125,875,1150,875,1150,875,400,900,400,875,375,900,1150,875,1125,875,400,900,1150,875,1125,875,1125,875,400,900,400,875,1125,900,400,875,1150,875,1150,900,1125,875,1150,875,400,900,400,875,400,900,1150,875,400,900,400,875,1125,875,400,900,1150,900,1125,875,1150,875,375,900,400,900,400,900,400;
  * 20;9E;DEBUG;Pulses=88;Pulses(uSec)=1300,925,1225,925,1225,925,1200,925,425,925,1225,925,425,925,1225,925,1225,925,1225,925,1225,925,1225,925,1225,925,425,925,1225,925,1225,925,1225,925,425,925,425,925,1225,925,1225,925,425,925,425,925,425,925,1225,925,425,925,425,925,1225,925,425,925,1225,925,1225,925,1225,925,1225,925,425,925,425,925,425,925,1200,925,425,925,425,925,1225,925,1225,925,425,925,425,925,1225;
@@ -61,26 +71,6 @@
  * e = Check Sum : (const5 + 2 + F + B + 2 + B + F) and F = D   
  *
  * --------------------------------------------------------------------------------------------
- * WS2355  
- * Each packet is 52 bits long. 4 different packet formats are transmitted. They are composed of: 
- * 
- * 1) 0000 1001 01 00 00100010 01111000 01010011 0011 10101100 0001   0+9+4+2+2+7+8+5+3+3+A+C=41 = 1
- * 2) 0000 1001 00 01 00100010 01111000 01010000 1101 10101111 1000   0+9+1+2+2+7+8+5+0+D+A+F=48 = 8
- * 3) 0000 1001 00 10 00100010 01111000 00001000 1100 11110111 1000
- * 4) 0000 1001 01 11 00100010 01111000 00000000 1100 11111111 1101
- *                 AA BBBBBBBB CCCCCCCC DDDDDDDD dddd EEEEEEEE FFFF    
- * 
- * A = packet type  00=TEMP, 01=HUM, 10=RAIN, 11=WIND
- * B = Rolling Code
- * C = Unknown
- * D = 12 bit value depending on the device/packet type
- * E = Unknown
- * F = Checksum
- *
- * TEMP Dd = temperature - 30 degrees offset, 12 bits, 0x533 - 0x300 = 0x233 = 23.3 degrees
- * HUM  D  = humidity value, 8 bits, 0x50 = RH of 50 
- * RAIN D = 
- * WIND d = Wind direction (0-16 in 22.5 degrees steps) D= wind speed
   \*********************************************************************************************/
 #define LACROSSE_PULSECOUNT 88
 
@@ -92,8 +82,7 @@ boolean Plugin_043(byte function, char *string) {
       unsigned long bitstream1=0L;                  // holds first 16 bits 
       unsigned long bitstream2=0L;                  // holds last 28 bits
 
-      int temperature=0;
-      int humidity=0;
+      int sensordata=0;
       byte checksum=0;
       //byte parity=0;
       byte bitcounter=0;                            // counts number of received bits (converted from pulses)
@@ -152,9 +141,6 @@ boolean Plugin_043(byte function, char *string) {
          return true;         // already seen the RF packet recently, but still want the humidity
       }  
       //==================================================================================
-      // Only accept temp and humidity packets for now, we need test data for other packet types
-      //if (data[2]!= 0x00 && data[2] != 0x0e) return false;
- 	  //==================================================================================
       // now process the various sensor types      
       //==================================================================================
       // Output
@@ -163,42 +149,37 @@ boolean Plugin_043(byte function, char *string) {
          sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
          Serial.print( pbuffer );
          Serial.print(F("LaCrosse;"));                    // Label
-
-         //sprintf(pbuffer, "ID=%02x%02x;", data[3], (data[4])>>1); // ID    
-         //Serial.print( pbuffer );
          data[4]=(data[4])>>1;
          Serial.print(F("ID="));                    // Label
          PrintHex8( data+3,1);
          PrintHex8( data+4,1);
 
-         temperature = data[5]*100;
-         temperature = temperature + data[6]*10;
-         temperature = temperature + data[7];
-         temperature = temperature-500;
-         sprintf(pbuffer, ";TEMP=%04x;", temperature);     
+         sensordata = data[5]*100;
+         sensordata = sensordata + data[6]*10;
+         sensordata = sensordata + data[7];
+         sensordata = sensordata-500;
+         sprintf(pbuffer, ";TEMP=%04x;", sensordata);     
          Serial.print( pbuffer );
-         RawSignal.Repeats=false; 
       } else
       if (data[2] == 0x0e) {
-         humidity=(data[5]*16)+data[6];
-         if (data[2]==0x0e && humidity==0) return false;  // humidity should not be 0
+         sensordata=(data[5]*16)+data[6];
+         if (sensordata==0) return false;           // humidity should not be 0
          sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
          Serial.print( pbuffer );
-         Serial.print(F("LaCrosse;"));                    // Label
-
-         //sprintf(pbuffer, "ID=%02x%02x;", data[3], (data[4])>>1 ); // ID    
-         //Serial.print( pbuffer );
+         Serial.print(F("LaCrosse;"));              // Label
          data[4]=(data[4])>>1;
          Serial.print(F("ID="));                    // Label
          PrintHex8( data+3,1);
          PrintHex8( data+4,1);
 
-         sprintf(pbuffer, ";HUM=%02x;", (humidity)&0xff);     
+         sprintf(pbuffer, ";HUM=%02x;", (sensordata)&0xff);     
          Serial.print( pbuffer );
-         RawSignal.Repeats=true;
+      } else {
+         return false;
       }
-      Serial.println();
       //==================================================================================
+      Serial.println();
+      RawSignal.Repeats=true;
       RawSignal.Number=0;
       success=true;
 #endif // PLUGIN_043_CORE

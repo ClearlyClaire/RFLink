@@ -80,6 +80,10 @@
 #define PLUGIN_040
 #define PLUGIN_040_CORE
 
+// Lacrosse 
+#define PLUGIN_041
+#define PLUGIN_041_CORE
+
 // UPM/Esic
 #define PLUGIN_042
 #define PLUGIN_042_CORE

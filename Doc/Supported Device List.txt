@@ -59,7 +59,7 @@ Alecto V4:
           Banggood SKU174397, Sako CH113, Homemart/Onemall FD030 and Blokker (Dake) 1730796 outdoor temperature sensor
 Cresta/Hideki:
           Hideki, TFA Nexus, Mebus, Irox, Irox-Pro X, Honeywell, Cresta TE923, TE923W, TE821W,  
-          WXR810, DV928, Ventus W906, HomeWizard Rain meter
+          WXR810, DV928, Ventus W906, HomeWizard Rain meter, Hama TS33C
 Mebus: 
           Mebus Outdoor Sensor
           Stacja Pogody WS-9941-M
@@ -69,7 +69,9 @@ UPM/Esic:
 LaCrosse: 
           Lacrosse TX3-TH  Thermo/Humidity, Lacrosse TX4
           WS7000-15: Anemometer, WS7000-16: Rain precipitation, WS2500-19: Brightness Luxmeter, 
-          WS7000-20: Thermo/Humidity/Barometer
+          WS7000-20: Thermo/Humidity/Barometer, TFA 30.3125 (temperature + humidity), TFA 30.3120.90 (temperature)
+LaCrosseV2: 
+          WS2300 (Temperature/Humidity/Wind/Rain), WS3600 (Temperature/Humidity/Wind/Rain)
 Auriol:   
           Z31743, Rubicson
 Auriol V2:   

@@ -1,3 +1,8 @@
+R25:
+- Fixed: Eurodomest address range check
+- Fixed: Alecto V1 and V3 humidity handling
+- Fixed: Lacrosse WS2300/WS3600 and labelled as LacrosseV2
+===
 R24: 
 - Fixed: Flamingo Smoke Detector timings and device address usage
 - Fixed: Timing for Nexa/Jula Anslut
@@ -83,5 +88,5 @@ r1/2/3/4/5:
 ===
 
 Special thanks to:
-Alex, Christophe, Deennoo, John, Jonas, Goran, Mark, Martinus, Maurice, Paul, Pim, Remco, Richard, Rob, Sebastien, William
+Alex, Christophe, Deennoo, John, Jonas, Gerrit, Goran, Mark, Martinus, Maurice, Paul, Pim, Remco, Richard, Rob, Sebastien, William
 and everyone who contributed with feedback, suggestions, debug data, tests etc.
