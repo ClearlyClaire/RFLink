@@ -76,14 +76,11 @@
  \*********************************************************************************************/
 #define FA500RM3_PulseLength    26
 #define FA500RM1_PulseLength    58
+#define FA500_PULSEMID  400/RAWSIGNAL_SAMPLE_RATE
 
-void Flamingo_Send(int funitc, int fcmd);
-void Tevion_Send(void);
-
+#ifdef PLUGIN_012
 boolean Plugin_012(byte function, char *string) {
-    boolean success=false;
-  
-    #ifdef PLUGIN_012_CORE
+      if (RawSignal.Number!=(FA500RM3_PulseLength) && RawSignal.Number!=(FA500RM1_PulseLength)) return false; 
 
       byte type=0;                      // 0=KAKU 1=ITK 2=PT2262
       byte housecode=0;
@@ -92,13 +89,11 @@ boolean Plugin_012(byte function, char *string) {
       unsigned long bitstream=0L;
       unsigned long address=0L;
       // ==========================================================================
-      if (RawSignal.Number!=(FA500RM3_PulseLength) && RawSignal.Number!=(FA500RM1_PulseLength)) return false; 
-
       if (RawSignal.Number==(FA500RM3_PulseLength) ) { 
          // get all 26pulses =>24 manchester bits => 12 actual bits
          type=0;
          for(byte x=2;x <=FA500RM3_PulseLength-2;x+=2) {  // Method 3
-             if(RawSignal.Pulses[x]*RawSignal.Multiply > 400) {
+             if(RawSignal.Pulses[x] > FA500_PULSEMID) {
                 bitstream = (bitstream << 1) | 0x1;
             } else {
                 bitstream = (bitstream << 1); 
@@ -108,7 +103,7 @@ boolean Plugin_012(byte function, char *string) {
          // get all 58pulses =>28 bits
          type=1;
          for(byte x=1;x <=FA500RM1_PulseLength-2;x+=2) {  // method 1
-             if(RawSignal.Pulses[x]*RawSignal.Multiply > 400) {
+             if(RawSignal.Pulses[x] > FA500_PULSEMID) {
                 bitstream = (bitstream << 1) | 0x1;
             } else {
                 bitstream = (bitstream << 1); 
@@ -203,19 +198,19 @@ boolean Plugin_012(byte function, char *string) {
       Serial.println();
       // ----------------------------------
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
-      success=true;
-   #endif //PLUGIN_CORE_003
-   return success;
+      return true;
 }
+#endif //PLUGIN_012
+
+#ifdef PLUGIN_TX_012
+void Flamingo_Send(int funitc, int fcmd);
    
 boolean PluginTX_012(byte function, char *string) {
-    boolean success=false;
-    
-      //10;FA500;001b523;D3;ON;
-      //012345678901234567890123 
-      #ifdef PLUGIN_TX_012_CORE
+        boolean success=false;
+        //10;FA500;001b523;D3;ON;
+        //012345678901234567890123 
         if (strncasecmp(InputBuffer_Serial+3,"FA500;",6) == 0) { // FA500 Command
-           if (InputBuffer_Serial[16] != ';') return success;
+           if (InputBuffer_Serial[16] != ';') return false;
            unsigned long bitstream=0L;
            byte Home=0;  
            byte c;
@@ -229,14 +224,12 @@ boolean PluginTX_012(byte function, char *string) {
            
            c=0;
            c |= str2cmd(InputBuffer_Serial+20)==VALUE_OFF;          // ON/OFF command
-           success=true;
            Flamingo_Send(bitstream, c);
+           success=true;
         }
-   #endif //PLUGIN_CORE_012
-    return success;
+        return success;
 }
 
-#ifdef PLUGIN_TX_012_CORE
 void Flamingo_Send(int fbutton, int fcmd) {
     int fpulse = 350;                               // Pulse witdh in microseconds
     int fretrans = 9;                               // Number of code retransmissions
@@ -313,4 +306,4 @@ void Flamingo_Send(int fbutton, int fcmd) {
     digitalWrite(PIN_RF_RX_VCC,HIGH);               // Spanning naar de RF ontvanger weer aan.
     RFLinkHW();
 }
-#endif //PLUGIN_CORE_012
+#endif //PLUGIN_TX_012

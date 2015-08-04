@@ -28,13 +28,10 @@
  * Details http://wiki.beyondlogic.org/index.php?title=Reverse_engineering_the_RF_protocol_on_a_Kambrook_Power_Point_Controller
  \*********************************************************************************************/
 #define KAMBROOK_PULSECOUNT 96
+#define KAMBROOK_PULSEMID  400/RAWSIGNAL_SAMPLE_RATE
 
-void Kambrook_Send(unsigned long address);
-
+#ifdef PLUGIN_008
 boolean Plugin_008(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_008_CORE
       if (RawSignal.Number != KAMBROOK_PULSECOUNT) return false;
       unsigned long address=0L;
       byte sync=0;
@@ -48,7 +45,7 @@ boolean Plugin_008(byte function, char *string) {
       //==================================================================================
       // get bits
       for(byte x=1;x<KAMBROOK_PULSECOUNT;x=x+2) {
-         if (RawSignal.Pulses[x]*RawSignal.Multiply > 400) {
+         if (RawSignal.Pulses[x] > KAMBROOK_PULSEMID) {
             if (bitcounter < 8) {
                 sync = (sync << 1) | 0x1;   
             } else 
@@ -117,19 +114,19 @@ boolean Plugin_008(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
       RawSignal.Number=0;
-      success=true;
-#endif // PLUGIN_008_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_008
+
+#ifdef PLUGIN_TX_008
+void Kambrook_Send(unsigned long address);
 
 boolean PluginTX_008(byte function, char *string) {
-  boolean success=false;
-      #ifdef PLUGIN_TX_008_CORE
-
+        boolean success=false;
         //10;kambrook;050325;a1;ON;
         //012345678901234567890123
         if (strncasecmp(InputBuffer_Serial+3,"KAMBROOK;",9) == 0) { // KAKU Command eg. 
-           if (InputBuffer_Serial[18] != ';') return success;
+           if (InputBuffer_Serial[18] != ';') return false;
           
            InputBuffer_Serial[10]=0x30;
            InputBuffer_Serial[11]=0x78;                            // Get address from hexadecimal value 
@@ -164,11 +161,9 @@ boolean PluginTX_008(byte function, char *string) {
            Kambrook_Send(bitstream);                // bitstream to send
            success=true;
         }
-#endif // PLUGIN_008_CORE
-  return success;
+        return success;
 }
 
-#ifdef PLUGIN_TX_008_CORE
 void Kambrook_Send(unsigned long address) { 
     int fpulse = 300;                                  // Pulse witdh in microseconds
     int fretrans = 5;                                  // Number of code retransmissions
@@ -179,7 +174,6 @@ void Kambrook_Send(unsigned long address) {
     digitalWrite(PIN_RF_RX_VCC,LOW);                   // Spanning naar de RF ontvanger uit om interferentie met de zender te voorkomen.
     digitalWrite(PIN_RF_TX_VCC,HIGH);                  // zet de 433Mhz zender aan
     delayMicroseconds(TRANSMITTER_STABLE_DELAY);       // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
-    //byte temp=(millis() &0xff);                        // used for the timestamp at the end of the RF packet
     for (int nRepeat = 0; nRepeat <= fretrans; nRepeat++) {
         // --------------
         // Send preamble (0x55) - 8 bits
@@ -250,4 +244,4 @@ void Kambrook_Send(unsigned long address) {
     digitalWrite(PIN_RF_RX_VCC,HIGH);                  // Spanning naar de RF ontvanger weer aan.
     RFLinkHW();
 }
-#endif // PLUGIN_008_CORE
+#endif // PLUGIN_008

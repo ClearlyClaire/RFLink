@@ -17,25 +17,28 @@
  * Message Format: (9 nibbles, 36 bits):
  *
  * Format for Temperature Humidity
- *   AAAAAAAA AAAA ABCC DDDD DDDD DDDD EEEEEEEE
+ *   AAAAAAAA AAAA BCDD EEEE EEEE EEEE FFFFFFFF 
  *   01011100 0001 1000 1111 0111 1011 00001110
      01110000 0000 1111 1011 0000 0000 00000101
      10110101 0000 1x00                01001001
+
+     01000101 1000 0110 1111 0000 1100 00100110
+     01011111 1101 1000 0000 1111 0001 00001110
+     01000101 1000 0010
  *
  *   A = Rolling Code
- *   B = 0=scheduled transmission, 1=requested transmission (button press)
- *   C = Channel number (00=ch1 01=ch2 10=ch3)
- *   D = Temperature (two's complement)
- *   E = Humidity BCD format
+ *   B = 1 (fixed value)
+ *   C = 0=scheduled transmission, 1=requested transmission (button press)
+ *   D = Channel number (00=ch1 01=ch2 10=ch3)
+ *   E = Temperature (two's complement)
+ *   F = Humidity BCD format
  *
  * 20;3F;DEBUG;Pulses=74;Pulses(uSec)=525,1725,425,3600,425,1725,425,3600,425,3625,425,1725,425,3600,425,1725,425,1725,425,1700,425,3600,425,3600,425,3600,425,1725,425,1725,425,1725,425,1725,425,1725,400,1725,425,3600,425,1725,425,1725,425,1725,425,3600,400,1725,425,1725,425,3625,400,1725,425,1725,425,1750,400,3600,425,1725,400,1750,400,3625,425,1725,400,1725,425;
  * 20;C2;DEBUG;Pulses=76;Pulses(uSec)=325,500,250,1800,375,3650,375,1775,375,3650,375,3650,375,1775,375,3650,375,1800,350,1800,375,3650,375,3650,375,3650,375,3650,375,1775,375,1775,375,1775,375,1775,375,1775,375,1775,375,1775,375,3650,375,3650,375,3650,375,1775,375,3650,375,3650,375,1775,375,1775,375,1775,375,1775,375,1775,375,1775,375,3650,375,3650,375,3650,375,3650,375;
  * 20;3E;DEBUG;Pulses=78;Pulses(uSec)=525,250,500,375,600,1650,450,3550,475,1675,450,3550,475,3550,450,1675,450,3575,450,1675,450,1700,450,1700,450,3575,425,3600,450,3575,475,1700,425,1725,425,1725,425,1725,400,1725,425,1725,425,3625,425,1725,425,1725,425,1725,425,3600,425,1725,400,1725,425,3600,425,1725,425,1725,400,1725,425,3600,400,1725,425,1725,400,3600,425,1725,425,1725,400;
  \*********************************************************************************************/
+#ifdef PLUGIN_032
 boolean Plugin_032(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_032_CORE
       if (RawSignal.Number < 74 || RawSignal.Number > 78 ) return false;
       unsigned long bitstream=0L;
       int temperature=0;
@@ -83,6 +86,7 @@ boolean Plugin_032(byte function, char *string) {
       // Sort data
       rc = (bitstream >> 20) & 0xff;
       rc2= (bitstream >> 12) & 0xfb;         
+      if ( ((rc2)&0x08) != 0x08) return false;         // needs to be 1
       temperature = (bitstream) & 0xfff;
       //fix 12 bit signed number conversion
       if ((temperature & 0x800) == 0x800) {
@@ -112,7 +116,6 @@ boolean Plugin_032(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                          // suppress repeats of the same RF packet
       RawSignal.Number=0;
-      success = true;
-#endif // PLUGIN_032_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_032

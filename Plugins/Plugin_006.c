@@ -32,24 +32,19 @@
  * BlyssSend address,switch,cmd;  => (16 bits,8 bits,on/off/allon/alloff)
  \*********************************************************************************************/
 #define BLYSS_PULSECOUNT 106
+#define BLYSS_PULSEMID   500/RAWSIGNAL_SAMPLE_RATE
 
-void Blyss_Send(unsigned long address);
-
+#ifdef PLUGIN_006
 boolean Plugin_006(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_006_CORE
-      //==================================================================================
+      if (RawSignal.Number != BLYSS_PULSECOUNT) return false;
       unsigned long bitstream=0L;
       unsigned long bitstream1=0L;
       byte bitcounter=0;
       byte checksum=0;
-
-      if (RawSignal.Number != BLYSS_PULSECOUNT) return false;
       //==================================================================================
       // get bits
       for(byte x=2;x < BLYSS_PULSECOUNT;x=x+2) {
-         if (RawSignal.Pulses[x]*RawSignal.Multiply > 500) {
+         if (RawSignal.Pulses[x] > BLYSS_PULSEMID) {
             if (bitcounter < 32) {
                 bitstream = (bitstream << 1); 
             } else {
@@ -121,17 +116,18 @@ boolean Plugin_006(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet 
       RawSignal.Number=0;
-      success=true;
-#endif // PLUGIN_006_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_006
+
+#ifdef PLUGIN_TX_006
+void Blyss_Send(unsigned long address);
 
 boolean PluginTX_006(byte function, char *string) {
-  boolean success=false;
+        boolean success=false;
         //10;Blyss;00ff98;A1;OFF;
         //012345678901234567890123456
         // Hier aangekomen bevat string het volledige commando. Test als eerste of het opgegeven commando overeen komt
-     #ifdef PLUGIN_TX_006_CORE
         if (strncasecmp(InputBuffer_Serial+3,"BLYSS;",6) == 0) { // Blyss Command eg. 
            unsigned long Bitstream = 0L;
            if (InputBuffer_Serial[15] != ';') return success; // check
@@ -166,21 +162,20 @@ boolean PluginTX_006(byte function, char *string) {
            c = str2cmd(InputBuffer_Serial+19);      // ALL ON/OFF command
            if (c == VALUE_OFF) { 
               Bitstream=Bitstream|1;
-           } else
+           } else {
               if (c == VALUE_ALLOFF) { 
                  Bitstream=Bitstream|3;
               } else
               if (c == VALUE_ALLON) { 
                  Bitstream=Bitstream|2;
               } 
-           success=true;
+           }
            Blyss_Send(Bitstream);                   // Bitstream contains the middle part of the bitstream to send
+           success=true;
         } 
-#endif // PLUGIN_006_CORE
-  return success;
+        return success;
 }
 
-#ifdef PLUGIN_TX_006_CORE
 void Blyss_Send(unsigned long address) { 
     int fpulse = 400;                               // Pulse witdh in microseconds
     int fretrans = 5;                               // Number of code retransmissions
@@ -190,8 +185,7 @@ void Blyss_Send(unsigned long address) {
 
     digitalWrite(PIN_RF_RX_VCC,LOW);                // Spanning naar de RF ontvanger uit om interferentie met de zender te voorkomen.
     digitalWrite(PIN_RF_TX_VCC,HIGH);               // zet de 433Mhz zender aan
-    //delay(TRANSMITTER_STABLE_TIME);                 // kleine pauze om de zender de tijd te geven om stabiel te worden 
-    delayMicroseconds(500);                         // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
+    delayMicroseconds(TRANSMITTER_STABLE_DELAY);    // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
     byte temp=(millis() &0xff);                     // used for the timestamp at the end of the RF packet
     for (int nRepeat = 0; nRepeat <= fretrans; nRepeat++) {
         // send SYNC 1P low, 6P high
@@ -264,10 +258,9 @@ void Blyss_Send(unsigned long address) {
         digitalWrite(PIN_RF_TX_DATA, LOW);
         delayMicroseconds(fpulse * 14);
     }
-    delayMicroseconds(500);                            // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
-    //delay(TRANSMITTER_STABLE_TIME);                    // kleine pause zodat de ether even schoon blijft na de stopbit
+    delayMicroseconds(TRANSMITTER_STABLE_DELAY);    // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
     digitalWrite(PIN_RF_TX_VCC,LOW);                   // zet de 433Mhz zender weer uit
     digitalWrite(PIN_RF_RX_VCC,HIGH);                  // Spanning naar de RF ontvanger weer aan.
     RFLinkHW();
 }
-#endif // PLUGIN_006_CORE
+#endif // PLUGIN_TX_006

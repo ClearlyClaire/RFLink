@@ -24,7 +24,13 @@ ARC Protocol:                                       (Send + Receive)
  - Elro Home Comfort AB600
  - (Elro) Home Control 
  - Smarthome YC-4000B
-
+ - Phenix YC-4000S
+ - Pollin Funk-Dimmer HouseLight FD-UP001 
+ - Pollin Funk-Steckdosen-Set 2605
+ - Conrad 646443 outlet sockets / RSL366R 
+ - Proteam HO1853
+ - Velleman WRS3B 
+ 
  Automatic Code Learning Protocols:                  (Send + Receive)
 - Klik Aan Klik Uit
   (among others: AWMR210, AWMT230, AWMD250, AWST8800)
@@ -33,17 +39,23 @@ ARC Protocol:                                       (Send + Receive)
 
 Others:                                             (Send + Receive)	
 - Home Easy (Code Wheel)                            
-- Flamingo FA500R/S/DSS/WD                          
-- SilverCrest 91210/60494 RCS AAA3680
-- Mumbi M-FS300
 - Unitec 48110 EIM 826 / 48111 EIM 821
 - Quigg GT-1000 RC / Quigg GT-FSI-08 
 - Intertek Eurodomest 972080                        
 - Blyss                                             
-- Conrad RSL2                                       
+- Conrad RSL2, Conrad RSL88R/B
 - Kambrook RF3399/RF3405/RF3672/RF3689/RF4471R      
 - X10 RF switches                                   
 - Home Confort Smart Home - TEL-010 
+- Quigg GT-7008BS, Quigg GT-FSI-04
+- DMV-7008S 
+- Powerfix RCB-I 3600
+- Rev Ritter REV 8342L
+
+- Flamingo FA500R/S/DSS/WD                          
+- SilverCrest 91210/60494 RCS AAA3680
+- Mumbi M-FS300
+- Toom 1919384 
 ============================================================================
 Weather Sensors:
 ----------------
@@ -59,7 +71,7 @@ Alecto V4:
           Banggood SKU174397, Sako CH113, Homemart/Onemall FD030 and Blokker (Dake) 1730796 outdoor temperature sensor
 Cresta/Hideki:
           Hideki, TFA Nexus, Mebus, Irox, Irox-Pro X, Honeywell, Cresta TE923, TE923W, TE821W,  
-          WXR810, DV928, Ventus W906, HomeWizard Rain meter, Hama TS33C
+          WXR810, DV928, Ventus W906, HomeWizard Rain meter
 Mebus: 
           Mebus Outdoor Sensor
           Stacja Pogody WS-9941-M
@@ -69,20 +81,20 @@ UPM/Esic:
 LaCrosse: 
           Lacrosse TX3-TH  Thermo/Humidity, Lacrosse TX4
           WS7000-15: Anemometer, WS7000-16: Rain precipitation, WS2500-19: Brightness Luxmeter, 
-          WS7000-20: Thermo/Humidity/Barometer, TFA 30.3125 (temperature + humidity), TFA 30.3120.90 (temperature)
-LaCrosseV2: 
-          WS2300 (Temperature/Humidity/Wind/Rain), WS3600 (Temperature/Humidity/Wind/Rain)
+          WS7000-20: Thermo/Humidity/Barometer, TFA 30.3125 (temperature + humidity), TFA 30.3120.90 (temperature)   
+LaCrosseV2:   
+          WS2300 (Temperature/Humidity/Wind/Rain), WS3600  
 Auriol:   
-          Z31743, Rubicson
-Auriol V2:   
-          Z31055A-TX, Xiron 
+          Z31743, Rubicson  
+Auriol V2:    
+          Z31055A-TX, Xiron, Watshome YT6018-2, Technoline
 Auriol V3:   
           Z32171A
 Oregon V1/2/3:
           THC238, THC268, THN132N, THWR288A, THRN122N, THN122N, AW129, AW131, THGR268, THGR122X,
           THGN122N, THGN123N, THGR122NX, THGR228N, THGR238, WTGR800, THGR918, THGRN228NX, THGN500,
-          THGR810, RTGR328N, THGR328N, Huger BTHR918, BTHR918N, BTHR968, RGR126, RGR682, RGR918, PCR122
-          THWR800, THR128, THR138, THC138, OWL CM119, cent-a-meter, OWL CM113, Electrisave 
+          THGR810, RTGR328N, THGR328N, Huger BTHR918, BTHR918N, BTHR968, RGR126, RGR682, RGR918, PCR122,
+          THWR800, THR128, THR138, THC138, OWL CM119, cent-a-meter, OWL CM113, Electrisave , RGR928,
           UVN128, UV138, UVN800, Huger-STR918, WGR918, WGR800, PCR800, WGTR800, BTHG968
 ============================================================================
 Window blinds/shutters/sun screens:

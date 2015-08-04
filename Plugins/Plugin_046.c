@@ -4,6 +4,7 @@
 //#######################################################################################################
 /*********************************************************************************************\
  * This plugin takes care of decoding the Auriol protocol for sensor type Z31055A-TX and Xiron 
+ * Watshome YT6018-2 (From Fujian Youtong)
  * 
  * Author             : StuntTeam
  * Support            : http://sourceforge.net/projects/rflink/
@@ -20,7 +21,7 @@
  * AAAAAAAA BB CC DDDDDDDDDDDD EEEE FFFFFFFF
  * A = Rolling Code, no change during normal operation. (Device 'Session' ID) (Might also be 4 bits RC and 4 bits for channel number)
  * B = Battery status indicator on highest bit, 1=OK 0=LOW
- * C = Always 000 
+ * C = Always 00 (Most likely channel number)
  * D = Temperature (12 bit, 21.5 degrees is shown as decimal value 215, minus values have the high bit set and need to be subtracted from a base value of 4096)
  * E = Always 1111 ?
  * F = Always 0000 0000 ?
@@ -44,10 +45,8 @@
 #define PLUGIN_ID 46
 #define AURIOLV2_PULSECOUNT 74
 
+#ifdef PLUGIN_046
 boolean Plugin_046(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_046_CORE
       if (RawSignal.Number != AURIOLV2_PULSECOUNT) return false;
       unsigned long bitstream1=0L;
       unsigned long bitstream2=0L;
@@ -83,7 +82,6 @@ boolean Plugin_046(byte function, char *string) {
       }
       //==================================================================================
       if (bitstream1==0) return false;              // Perform sanity check
-      if (bitstream2==0) return false;              // Perform sanity check
       if ((bitstream2 & 0xF00) != 0xF00) return false; // check if 'E' has all 4 bits set
       if ((bitstream2 & 0xfff) != 0xF00) { 
          type=1;                                    // Xiron
@@ -113,17 +111,17 @@ boolean Plugin_046(byte function, char *string) {
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( pbuffer );
-      // ----------------------------------
+      Serial.print("20;");
+      PrintHexByte(PKSequenceNumber++);
       if (type == 0) {
-         Serial.print(F("Auriol V2;"));             // Label
+         Serial.print(F(";Auriol V2;ID="));         // Label
       } else {
-         Serial.print(F("Xiron;"));                 // Label
+         Serial.print(F(";Xiron;ID="));             // Label
       }
-      sprintf(pbuffer, "ID=%02x%02x;", rc, channel); // ID (rc+channel)
-      Serial.print( pbuffer );
-      sprintf(pbuffer, "TEMP=%04x;", temperature);     
+      PrintHexByte(rc);
+      PrintHexByte(channel);
+      // ----------------------------------
+      sprintf(pbuffer, ";TEMP=%04x;", temperature);     
       Serial.print( pbuffer );
       if (type == 1) {
          sprintf(pbuffer, "HUM=%02d;", humidity);     
@@ -138,7 +136,6 @@ boolean Plugin_046(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                       // suppress repeats of the same RF packet 
       RawSignal.Number=0;
-      success = true;
-#endif // PLUGIN_046_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_046

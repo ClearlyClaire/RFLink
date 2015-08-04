@@ -23,7 +23,7 @@ float ul2float(unsigned long ul) {
     return f;
 }
 /*********************************************************************************************/
-void PrintHex8(uint8_t *data, uint8_t length) { // prints 8-bit data in hex
+void PrintHex8(uint8_t *data, uint8_t length) { // prints 8-bit data in hex (lowercase)
   char tmp[length*2+1];
   byte first ;
   int j=0;
@@ -34,11 +34,26 @@ void PrintHex8(uint8_t *data, uint8_t length) { // prints 8-bit data in hex
     j++;
 
     first = (data[i] & 0x0F) | 48;
-    if (first > 57) tmp[j] = first + (byte)39; 
+    if (first > 57) tmp[j] = first + (byte)39;  
     else tmp[j] = first;
     j++;
   }
   tmp[length*2] = 0;
+  Serial.print(tmp);
+}
+/*********************************************************************************************/
+// todo: make uppercase?  3a = 3 or 48 (0x30) = 0x33   >57 (0x39)   a>3a >39 >   +27 
+void PrintHexByte(uint8_t data) { // prints 8-bit value in hex (single byte) 
+  char tmp[3];
+  byte first ;
+  first = (data >> 4) | 48;                   // or with 0x30
+  if (first > 57) tmp[0] = first + (byte)7;   // 39;  // if > 0x39 add 0x27 
+  else tmp[0] = first ;
+
+  first = (data & 0x0F) | 48;
+  if (first > 57) tmp[1] = first + (byte)7;  // 39; 
+  else tmp[1] = first;
+  tmp[2] = 0;
   Serial.print(tmp);
 }
 /*********************************************************************************************/

@@ -20,7 +20,7 @@
  *   all on/off   ---- 001x AllOff/AllOn
  *   dim absolute xxxx 0110 Dim16        // dim on bit 27 + 4 extra bits for dim level
  *
- *  NewKAKU bitstream= (First sent) AAAAAAAAAAAAAAAAAAAAAAAAAACCUUUU(LLLL) -> A=KAKU_address, C=command, U=KAKU-Unit, L=extra dimlevel bits (optional)
+ *  NewKAKU bitstream= (First sent) AA AAAAAAAA AAAAAAAA AAAAAAAACCUUUU(LLLL) -> A=KAKU_address, C=command, U=KAKU-Unit, L=extra dimlevel bits (optional)
  *
  * Sample RF packet:
  * 20;B8;NewKaku;ID=00c142;SWITCH=1;CMD=OFF;
@@ -30,19 +30,18 @@
 #define NewKAKU_RawSignalLength      132        // regular KAKU packet length
 #define NewKAKUdim_RawSignalLength   148        // KAKU packet length including DIM bits
 #define NewKAKU_1T                   225        // 275        // us
-#define NewKAKU_mT                   650        //            // us, approx. in between 1T and 4T 
+#define NewKAKU_mT                   650/RAWSIGNAL_SAMPLE_RATE // us, approx. in between 1T and 4T 
 #define NewKAKU_4T                  1225        // 1100       // us
 #define NewKAKU_8T                  2600        // 2200       // us, Duration of the space after the start bit
 
+#ifdef PLUGIN_004
 boolean Plugin_004(byte function, char *string) {
-  boolean success=false;
-  
-    #ifdef PLUGIN_004_CORE
       // nieuwe KAKU bestaat altijd uit start bit + 32 bits + evt 4 dim bits. Ongelijk, dan geen NewKAKU
       if ( (RawSignal.Number != NewKAKU_RawSignalLength) && (RawSignal.Number != NewKAKUdim_RawSignalLength) ) return false;
       boolean Bit;
       int i;
-      int P0,P1,P2,P3;
+      //int P0,P1,P2,P3;
+      byte P0,P1,P2,P3;
       byte dim=0;
       unsigned long bitstream=0L;
       
@@ -51,12 +50,11 @@ boolean Plugin_004(byte function, char *string) {
       // RawSignal.Pulses[2] bevat lange space na startbit met tijdsduur van 8T => negeren
       i=3; // RawSignal.Pulses[3] is de eerste van een T,xT,T,xT combinatie
       //if ( RawSignal.Number==(NewKAKU_RawSignalLength-2) || RawSignal.Number==(NewKAKUdim_RawSignalLength-2) ) i=1;
-
       do {
-          P0=RawSignal.Pulses[i]    * RawSignal.Multiply;
-          P1=RawSignal.Pulses[i+1]  * RawSignal.Multiply;
-          P2=RawSignal.Pulses[i+2]  * RawSignal.Multiply;
-          P3=RawSignal.Pulses[i+3]  * RawSignal.Multiply;
+          P0=RawSignal.Pulses[i]  ; // * RawSignal.Multiply;
+          P1=RawSignal.Pulses[i+1]; // * RawSignal.Multiply;
+          P2=RawSignal.Pulses[i+2]; // * RawSignal.Multiply;
+          P3=RawSignal.Pulses[i+3]; // * RawSignal.Multiply;
           
           if (P0<NewKAKU_mT && P1<NewKAKU_mT && P2<NewKAKU_mT && P3>NewKAKU_mT) { 
               Bit=0; // T,T,T,4T
@@ -101,7 +99,7 @@ boolean Plugin_004(byte function, char *string) {
       Serial.print( pbuffer );
       // ----------------------------------
       Serial.print(F("NewKaku;"));                               // Label
-      sprintf(pbuffer, "ID=%06lx;",((bitstream) >> 6) );   // ID   
+      sprintf(pbuffer, "ID=%08lx;",((bitstream) >> 6) );   // ID   
       Serial.print( pbuffer );
       sprintf(pbuffer, "SWITCH=%d;", ((bitstream)&0x0f)+1 );     
       Serial.print( pbuffer );
@@ -122,46 +120,55 @@ boolean Plugin_004(byte function, char *string) {
       // ----------------------------------
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
       RawSignal.Number=0;
-      success=true;
-    #endif // CORE
-  return success;
+      return true;
 }
+#endif // Plugin_004
 
+#ifdef PLUGIN_TX_004
 boolean PluginTX_004(byte function, char *string) {
-  boolean success=false;
-   
-    #ifdef PLUGIN_TX_004_CORE
+        boolean success=false;
         //10;NewKaku;123456;3;ON;                   // ON, OFF, ALLON, ALLOFF, ALL 99, 99      
+        //10;NewKaku;306070b;f;ON;
         //01234567890123456789012
-        // Hier aangekomen bevat string het volledige commando. Test als eerste of het opgegeven commando overeen komt
-        if (strncasecmp(InputBuffer_Serial+3,"NEWKAKU;",8) == 0) { // KAKU Command eg. Kaku;A1;On
-           if (InputBuffer_Serial[17] != ';') return success;
-           if (InputBuffer_Serial[19] != ';') return success;
+        if (strncasecmp(InputBuffer_Serial+3,"NEWKAKU;",8) == 0) { 
+           byte x=18;                               // pointer to the switch number
+           if (InputBuffer_Serial[17] != ';') {
+              if (InputBuffer_Serial[18] != ';') {
+                 return false;
+              } else {
+                 x=19;
+                 if (InputBuffer_Serial[20] != ';') return false;
+              }
+           } else {
+              if (InputBuffer_Serial[19] != ';') return false;
+              
+           }
            
            unsigned long bitstream=0L;
            unsigned long tempaddress=0L;
            byte cmd=0;
            byte c=0;
-           byte x=18;                               // teller die wijst naar het te behandelen teken
            byte Address=0;                          // Address 1..16
             
            InputBuffer_Serial[ 9]=0x30;
-           InputBuffer_Serial[10]=0x78;                            // Get address from hexadecimal value 
-           InputBuffer_Serial[17]=0x00;                            // Get address from hexadecimal value 
-           tempaddress=str2int(InputBuffer_Serial+9);              // NewKAKU address
+           InputBuffer_Serial[10]=0x78;             // Get address from hexadecimal value 
+           if (x==19) {
+              InputBuffer_Serial[18]=0x00;          // Get address from hexadecimal value 
+           } else {
+              InputBuffer_Serial[17]=0x00;          // Get address from hexadecimal value 
+           }
+           tempaddress=str2int(InputBuffer_Serial+9);  // NewKAKU address
 
-           while((c=InputBuffer_Serial[x++])!=';'){                // Address: 1 to 16
+           while((c=InputBuffer_Serial[x++])!=';'){ // Address: 1 to 16
               if(c>='0' && c<='9'){Address=Address*10;Address=Address+c-'0';}
            }
-           if (Address > 16) {
-              return success;
-           }
+           if (Address > 16) return false;          // invalid address
            Address--;                               // 1 to 16 -> 0 to 15
            tempaddress=(tempaddress <<6) + Address;
 
-           cmd=str2cmd(InputBuffer_Serial+x);                      // Get ON/OFF etc. command
+           cmd=str2cmd(InputBuffer_Serial+x);       // Get ON/OFF etc. command
            if (cmd == false) {                      // Not a valid command received? ON/OFF/ALLON/ALLOFF
-              cmd=str2int(InputBuffer_Serial+20);                  // get DIM value
+              cmd=str2int(InputBuffer_Serial+x);    // get DIM value
            }
            // --------------- NEWKAKU SEND ------------
            //unsigned long bitstream=0L;
@@ -214,6 +221,6 @@ boolean PluginTX_004(byte function, char *string) {
            success=true;
         }
         // --------------------------------------
-    #endif // CORE
-  return success;
+        return success;
 }
+#endif // Plugin_TX_004

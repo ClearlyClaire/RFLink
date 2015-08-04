@@ -1,13 +1,14 @@
+#define BUILDNR                          006                                    // shown in version
 #define MIN_RAW_PULSES                    20                                    // =8 bits. Minimal number of bits*2 that need to have been received before we spend CPU time on decoding the signal.
-#define RAWSIGNAL_SAMPLE_DEFAULT          25                                    // Sample width / resolution in uSec for raw RF pulses.
+#define RAWSIGNAL_SAMPLE_RATE             30                                    // Sample width / resolution in uSec for raw RF pulses.
 #define MIN_PULSE_LENGTH                  40                                    // Pulses shorter than this value in uSec. will be seen as garbage and not taken as actual pulses.
-#define SIGNAL_TIMEOUT                     5                                    // Timeout, after this time in mSec. the RF signal will be considered to have stopped.
+#define SIGNAL_TIMEOUT                     7                                    // Timeout, after this time in mSec. the RF signal will be considered to have stopped.
 #define SIGNAL_REPEAT_TIME               500                                    // Time in mSec. in which the same RF signal should not be accepted again. Filters out retransmits.
 #define BAUD                           57600                                    // Baudrate for serial communication.
-//#define TRANSMITTER_STABLE_TIME          5                                    // Time needed by the RF transmitter after powerup to get stabilized.
 #define TRANSMITTER_STABLE_DELAY         500                                    // delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms).
 #define RAW_BUFFER_SIZE                  512                                    // Maximum number of pulses that is received in one go.
-#define PLUGIN_MAX                        36                                    // Maximum number of plugins (times two for TX and RX). 
+#define PLUGIN_MAX                        41                                    // Maximum number of Receive plugins
+#define PLUGIN_TX_MAX                     20                                    // Maximum number of Transmit plugins
 #define SCAN_HIGH_TIME                    50                                    // tijdsinterval in ms. voor achtergrondtaken snelle verwerking
 #define FOCUS_TIME                        50                                    // Duration in mSec. that, after receiving serial data from USB only the serial port is checked. 
 #define INPUT_COMMAND_SIZE                60                                    // Maximum number of characters that a command via serial can be.
@@ -42,6 +43,8 @@ void(*Reboot)(void)=0;                                                          
 byte PKSequenceNumber=0;                                                        // 1 byte packet counter
 boolean RFDebug=false;                                                          // debug RF signals with plugin 001 
 boolean RFUDebug=false;                                                         // debug RF signals with plugin 254 
+boolean QRFDebug=false;                                                        // debug RF signals with plugin 254 but no multiplication
+
 uint8_t RFbit,RFport;                                                           // for processing RF signals.
 
 char pbuffer[PRINT_BUFFER_SIZE];                                                // Buffer for printing data
@@ -52,9 +55,11 @@ void PluginInit(void);
 void PluginTXInit(void);
 boolean (*Plugin_ptr[PLUGIN_MAX])(byte, char*);                                 // Receive plugins
 byte Plugin_id[PLUGIN_MAX];
-boolean (*PluginTX_ptr[PLUGIN_MAX])(byte, char*);                               // Transmit plugins
-byte PluginTX_id[PLUGIN_MAX];
+boolean (*PluginTX_ptr[PLUGIN_TX_MAX])(byte, char*);                            // Transmit plugins
+byte PluginTX_id[PLUGIN_TX_MAX];
+
 void PrintHex8(uint8_t *data, uint8_t length);                                  // prototype
+void PrintHexByte(uint8_t data);                                                // prototype
 void RFLinkHW( void );                                                          // prototype
 
 struct RawSignalStruct                                                          // Raw signal variabelen places in a struct
@@ -64,7 +69,7 @@ struct RawSignalStruct                                                          
   byte Delay;                                                                   // Delay in ms. after transmit of a single RF pulse packet
   byte Multiply;                                                                // Pulses[] * Multiply is the real pulse time in microseconds 
   unsigned long Time;                                                           // Timestamp indicating when the signal was received (millis())
-  byte Pulses[RAW_BUFFER_SIZE+2];                                               // Table with the measured pulses in microseconds devided by RawSignal.Multiply. (halves RAM usage)
+  byte Pulses[RAW_BUFFER_SIZE+2];                                               // Table with the measured pulses in microseconds divided by RawSignal.Multiply. (halves RAM usage)
                                                                                 // First pulse is located in element 1. Element 0 is used for special purposes, like signalling the use of a specific plugin
 } RawSignal={0,0,0,0,0,0L};
 // ===============================================================================
@@ -133,10 +138,11 @@ void loop() {
                      strcpy(InputBuffer_Serial,"reboot");
                      Reboot();
                   } else
-                  if (strncasecmp(InputBuffer_Serial+3,"RFDEBUG=O",8) == 0) {
+                  if (strncasecmp(InputBuffer_Serial+3,"RFDEBUG=O",9) == 0) {
                      if (InputBuffer_Serial[12] == 'N' || InputBuffer_Serial[12] == 'n' ) {
                         RFDebug=true;                                           // full debug on
                         RFUDebug=false;                                         // undecoded debug off 
+                        QRFDebug=false;                                        // undecoded debug off
                         sprintf(InputBuffer_Serial,"20;%02X;RFDEBUG=ON;",PKSequenceNumber++);
                      } else {
                         RFDebug=false;                                          // full debug off
@@ -144,9 +150,10 @@ void loop() {
                      }
                      Serial.println(InputBuffer_Serial); 
                   } else                 
-                  if (strncasecmp(InputBuffer_Serial+3,"RFUDEBUG=O",9) == 0) {
+                  if (strncasecmp(InputBuffer_Serial+3,"RFUDEBUG=O",10) == 0) {
                      if (InputBuffer_Serial[13] == 'N' || InputBuffer_Serial[13] == 'n') {
                         RFUDebug=true;                                          // undecoded debug on 
+                        QRFDebug=false;                                        // undecoded debug off
                         RFDebug=false;                                          // full debug off
                         sprintf(InputBuffer_Serial,"20;%02X;RFUDEBUG=ON;",PKSequenceNumber++);
                      } else {
@@ -154,6 +161,22 @@ void loop() {
                         sprintf(InputBuffer_Serial,"20;%02X;RFUDEBUG=OFF;",PKSequenceNumber++);
                      }
                      Serial.println(InputBuffer_Serial); 
+                  } else                 
+                  if (strncasecmp(InputBuffer_Serial+3,"QRFDEBUG=O",10) == 0) {
+                     if (InputBuffer_Serial[13] == 'N' || InputBuffer_Serial[13] == 'n') {
+                        QRFDebug=true;                                         // undecoded debug on 
+                        RFUDebug=false;                                         // undecoded debug off 
+                        RFDebug=false;                                          // full debug off
+                        sprintf(InputBuffer_Serial,"20;%02X;QRFDEBUG=ON;",PKSequenceNumber++);
+                     } else {
+                        QRFDebug=false;                                        // undecoded debug off
+                        sprintf(InputBuffer_Serial,"20;%02X;QRFDEBUG=OFF;",PKSequenceNumber++);
+                     }
+                     Serial.println(InputBuffer_Serial); 
+                  } else                 
+                  if (strncasecmp(InputBuffer_Serial+3,"VERSION",7) == 0) {
+                      sprintf(InputBuffer_Serial,"20;%02X;VER=1.1;REV=26;BUILD=%03d;",PKSequenceNumber++,BUILDNR);
+                      Serial.println(InputBuffer_Serial); 
                   } else {
                      // -------------------------------------------------------
                      // Handle Generic Commands / Translate protocol data into Nodo text commands 

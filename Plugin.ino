@@ -874,7 +874,7 @@ void PluginTXInit(void)
   byte x;
 
   // Wis de pointertabel voor de plugins.
-  for(x=0;x<PLUGIN_MAX;x++)
+  for(x=0;x<PLUGIN_TX_MAX;x++)
     {
     PluginTX_ptr[x]=0;
     PluginTX_id[x]=0;
@@ -1329,7 +1329,7 @@ byte PluginInitCall(byte Function, char *str) {
 byte PluginTXInitCall(byte Function, char *str) {
   int x;
 
-  for (x=0; x<PLUGIN_MAX; x++) {
+  for (x=0; x<PLUGIN_TX_MAX; x++) {
       if (PluginTX_id[x]!=0) {
          PluginTX_ptr[x](Function,str);
       }
@@ -1359,7 +1359,7 @@ byte PluginRXCall(byte Function, char *str) {
 byte PluginTXCall(byte Function, char *str) {
   int x;
 
-  for (x=0; x<PLUGIN_MAX; x++) {
+  for (x=0; x<PLUGIN_TX_MAX; x++) {
       if (PluginTX_id[x]!=0) {
          if (PluginTX_ptr[x](Function,str)) {
             return true;

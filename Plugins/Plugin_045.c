@@ -32,10 +32,8 @@
  \*********************************************************************************************/
 #define AURIOL_PULSECOUNT 66
 
+#ifdef PLUGIN_045
 boolean Plugin_045(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_045_CORE
       if (RawSignal.Number != AURIOL_PULSECOUNT) return false;
       unsigned long bitstream=0L;
       unsigned int temperature=0;
@@ -60,50 +58,48 @@ boolean Plugin_045(byte function, char *string) {
       //==================================================================================
       if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer+1000<millis()) ) { 
          // not seen the RF packet recently
-         if (bitstream == 0) return false;         // Perform a sanity check
+         if (bitstream == 0) return false;          // Perform a sanity check
       } else {
          // already seen the RF packet recently
          return true;
       }
       //==================================================================================
-      for (int i=1;i<32;i++) {                   // Perform a checksum calculation to make sure the received packet is a valid Auriol packet
+      for (int i=1;i<32;i++) {                      // Perform a checksum calculation to make sure the received packet is a valid Auriol packet
           checksumcalc=checksumcalc^ ((bitstream>>i)&0x01);
       }
       if (checksumcalc != (bitstream&0x01) ) return false;
-      rc = (bitstream >> 20) & 0x07;            // get 3 bits to perform another sanity check
-      if (rc != 0) return false;                 // selected bits should always be 000
+      rc = (bitstream >> 20) & 0x07;                // get 3 bits to perform another sanity check
+      if (rc != 0) return false;                    // selected bits should always be 000
       //==================================================================================
-      bat= (bitstream >> 23) & 0x01;            // get battery strength indicator
-      temperature = (bitstream >> 8) & 0xfff;   // get 12 temperature bits
-      rc = (bitstream >> 24) & 0xff;            // get rolling code
+      bat= (bitstream >> 23) & 0x01;                // get battery strength indicator
+      temperature = (bitstream >> 8) & 0xfff;       // get 12 temperature bits
+      rc = (bitstream >> 24) & 0xff;                // get rolling code
       if (temperature > 3000) {
-         temperature=4096-temperature;           // fix for minus temperatures
-         if (temperature > 0x258) return false;  // temperature out of range ( > -60.0 degrees) 
-         temperature=temperature | 0x8000;       // turn highest bit on for minus values
+         temperature=4096-temperature;              // fix for minus temperatures
+         if (temperature > 0x258) return false;     // temperature out of range ( > -60.0 degrees) 
+         temperature=temperature | 0x8000;          // turn highest bit on for minus values
       } else {
-         if (temperature > 0x258) return false;  // temperature out of range ( > 60.0 degrees) 
+         if (temperature > 0x258) return false;     // temperature out of range ( > 60.0 degrees) 
       }
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( pbuffer );
+      Serial.print("20;");
+      PrintHexByte(PKSequenceNumber++);
+      Serial.print(F(";Auriol;ID=00"));             // Label
+      PrintHexByte(rc);
       // ----------------------------------
-      Serial.print(F("Auriol;"));                // Label
-      sprintf(pbuffer, "ID=00%02x;", rc);         // ID    
+      sprintf(pbuffer, ";TEMP=%04x;", temperature);     
       Serial.print( pbuffer );
-      sprintf(pbuffer, "TEMP=%04x;", temperature);     
-      Serial.print( pbuffer );
-      if (bat==0) {                              // battery status
+      if (bat==0) {                                 // battery status
          Serial.print(F("BAT=LOW;"));
       } else {
          Serial.print(F("BAT=OK;"));
       }
       Serial.println();
       //==================================================================================
-      RawSignal.Repeats=true;                    // suppress repeats of the same RF packet
+      RawSignal.Repeats=true;                       // suppress repeats of the same RF packet
       RawSignal.Number=0;
-      success = true;
-#endif // PLUGIN_045_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_045

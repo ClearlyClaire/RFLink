@@ -45,10 +45,8 @@
 #define PLUGIN_082_RFLOW        400
 #define PLUGIN_082_RFHIGH       750
 
+#ifdef PLUGIN_082
 boolean Plugin_082(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_082_CORE
       if (RawSignal.Number !=MAXITROL_PULSECOUNT) return false;
       unsigned int bitstream=0L;
       byte address=0;
@@ -57,19 +55,19 @@ boolean Plugin_082(byte function, char *string) {
       //==================================================================================
       // get bits
       for(int x=3;x <= MAXITROL_PULSECOUNT-1;x=x+2) {
-         if (RawSignal.Pulses[x]*RawSignal.Multiply < 550) {
-            if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 550) return false;
+         if (RawSignal.Pulses[x]*RAWSIGNAL_SAMPLE_RATE < 550) {
+            if (RawSignal.Pulses[x+1]*RAWSIGNAL_SAMPLE_RATE < 550) return false;
             bitstream = (bitstream << 1);           // 0
          } else {
-            if (RawSignal.Pulses[x]*RawSignal.Multiply > 900) return false;
-            if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 550) return false;
+            if (RawSignal.Pulses[x]*RAWSIGNAL_SAMPLE_RATE > 900) return false;
+            if (RawSignal.Pulses[x+1]*RAWSIGNAL_SAMPLE_RATE > 550) return false;
             bitstream = (bitstream << 1) | 0x1;     // 1
          }
       }
       //==================================================================================
       // all bytes received, make sure packet is valid
-      if (RawSignal.Pulses[1]*RawSignal.Multiply > 550) return false;
-      if (RawSignal.Pulses[2]*RawSignal.Multiply > 550) return false;
+      if (RawSignal.Pulses[1]*RAWSIGNAL_SAMPLE_RATE > 550) return false;
+      if (RawSignal.Pulses[2]*RAWSIGNAL_SAMPLE_RATE > 550) return false;
       //==================================================================================
       // Prevent repeating signals from showing up
       //==================================================================================
@@ -115,19 +113,18 @@ boolean Plugin_082(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
       RawSignal.Number=0;
-      success = true;
-#endif // PLUGIN_082_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_082
 
+#ifdef PLUGIN_TX_082
 boolean PluginTX_082(byte function, char *string) {
-  boolean success=false;
-  unsigned long bitstream=0L;
-      #ifdef PLUGIN_TX_082_CORE
-       //10;MERTIK;64;UP;
-       //0123456789012345
-       if (strncasecmp(InputBuffer_Serial+3,"MERTIK;",7) == 0) { // KAKU Command eg.
-           if (InputBuffer_Serial[12] != ';') return success;
+        boolean success=false;
+        unsigned long bitstream=0L;
+        //10;MERTIK;64;UP;
+        //0123456789012345
+        if (strncasecmp(InputBuffer_Serial+3,"MERTIK;",7) == 0) { // KAKU Command eg.
+           if (InputBuffer_Serial[12] != ';') return false;
            unsigned int bitstream2=0;                  // holds last 8 bits
            
            InputBuffer_Serial[8]=0x30;
@@ -142,9 +139,7 @@ boolean PluginTX_082(byte function, char *string) {
            else if(strcasecmp(InputBuffer_Serial+13,"down")==0) bitstream2=0xD;
            else if(strcasecmp(InputBuffer_Serial+13,"go_up")==0) bitstream2=0xA;
            else if(strcasecmp(InputBuffer_Serial+13,"go_down")==0) bitstream2=0xC;
-           if (bitstream2==0) {
-              return success;
-           }
+           if (bitstream2==0) return false;
            //-----------------------------------------------
            RawSignal.Multiply=50;
            RawSignal.Repeats=10;
@@ -174,9 +169,9 @@ boolean PluginTX_082(byte function, char *string) {
            RawSignal.Pulses[27]=PLUGIN_082_RFSTART/RawSignal.Multiply;
            RawSignal.Number=27;
            RawSendRF();
-           success=true;
+           success=true;        
            //-----------------------------------------------
-       }
-  #endif // PLUGIN_082_CORE
-  return success;
+        }
+        return success;
 }
+#endif // PLUGIN_082

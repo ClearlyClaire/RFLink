@@ -63,14 +63,13 @@
  \*********************************************************************************************/
 #define WS1100_PULSECOUNT 94
 #define WS1200_PULSECOUNT 126
+#define ALECTOV3_PULSEMID  300/RAWSIGNAL_SAMPLE_RATE
 
+#ifdef PLUGIN_031
 uint8_t Plugin_031_ProtocolAlectoCRC8( uint8_t *addr, uint8_t len);
 unsigned int Plugin_031_ProtocolAlectoRainBase=0;
 
 boolean Plugin_031(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_031_CORE
       if ((RawSignal.Number != WS1100_PULSECOUNT) && (RawSignal.Number != WS1200_PULSECOUNT)) return false;
 
       unsigned long bitstream1=0L;
@@ -84,14 +83,14 @@ boolean Plugin_031(byte function, char *string) {
       byte data[6];
       //==================================================================================
       for (byte x=15; x<=77; x=x+2) {               // get first 32 relevant bits
-          if (RawSignal.Pulses[x]*RawSignal.Multiply < 0x300) {
+          if (RawSignal.Pulses[x] < ALECTOV3_PULSEMID) {
              bitstream1 = (bitstream1 << 1) | 0x1; 
           } else {
              bitstream1 = (bitstream1 << 1);
           }
       }
       for (byte x=79; x<=141; x=x+2) {              // get second 32 relevant bits
-          if (RawSignal.Pulses[x]*RawSignal.Multiply < 0x300) {
+          if (RawSignal.Pulses[x] < ALECTOV3_PULSEMID) {
              bitstream2 = (bitstream2 << 1) | 0x1; 
           } else {
              bitstream2 = (bitstream2 << 1);
@@ -155,12 +154,9 @@ boolean Plugin_031(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                          // suppress repeats of the same RF packet
       RawSignal.Number=0;                              // do not process the packet any further
-      success = true;                                  // processing successful
-#endif // PLUGIN_031_CORE
-  return success;
+      return true;
 }
 
-#ifdef PLUGIN_031_CORE
 /*********************************************************************************************\
  * Calculates CRC-8 checksum
  * reference http://lucsmall.com/2012/04/29/weather-station-hacking-part-2/
@@ -182,4 +178,4 @@ uint8_t Plugin_031_ProtocolAlectoCRC8( uint8_t *addr, uint8_t len)
   }
   return crc;
 }
-#endif //CORE
+#endif // PLUGIN_031

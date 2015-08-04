@@ -41,70 +41,64 @@
  * b) 20;05;DEBUG;Pulses=36;Pulses(uSec)=2100,2100,500,2050,500,2100,500,600,1950,600,1950,600,1950,600,1950,2050,500,2050,500,600,1950,600,1950,2100,500,2050,500,600,1950,600,1950,600,1950,600,1950;
  \*********************************************************************************************/
 #define SELECTPLUS_PULSECOUNT 36
-#define SELECTPLUS_PULSE_LONG   36
-#define SELECTPLUS_PULSE_SHORT  36
+#define SELECTPLUS_PULSEMID  650/RAWSIGNAL_SAMPLE_RATE
+#define SELECTPLUS_PULSEMAX  2125/RAWSIGNAL_SAMPLE_RATE
 
-void SelectPlus_Send(unsigned long address);
-
+#ifdef PLUGIN_070
 boolean Plugin_070(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_070_CORE
       if (RawSignal.Number !=SELECTPLUS_PULSECOUNT) return false; 
       unsigned long bitstream=0L;  
       byte checksum=0;
       //==================================================================================
       // get bytes 
       for(byte x=2;x < SELECTPLUS_PULSECOUNT;x=x+2) {
-         if (RawSignal.Pulses[x]*RawSignal.Multiply < 650) {
-            if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 650) return false; // invalid manchestercode
+         if (RawSignal.Pulses[x] < SELECTPLUS_PULSEMID) {
+            if (RawSignal.Pulses[x+1] < SELECTPLUS_PULSEMID) return false; // invalid pulse sequence 10/01
             bitstream = (bitstream << 1);
          } else {
-            if (RawSignal.Pulses[x]*RawSignal.Multiply > 2100) return false;  // invalid pulse duration 
-            if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 650) return false; // invalid manchestercode
+            if (RawSignal.Pulses[x] > SELECTPLUS_PULSEMAX) return false;  // invalid pulse duration, pulse too long 
+            if (RawSignal.Pulses[x+1] > SELECTPLUS_PULSEMID) return false; // invalid pulse sequence 10/01
             bitstream = (bitstream << 1) | 0x1; 
          }
       }
+      if (bitstream == 0) return false;             // sanity check
       //==================================================================================
       // Prevent repeating signals from showing up
       //==================================================================================
-      if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer<millis()) ){ 
-         // not seen the RF packet recently
-         if (bitstream == 0) return false;            // sanity check
+      if((SignalHash!=SignalHashPrevious) || ((RepeatingTimer+2000)<millis()) || (SignalCRC != bitstream) ) { 
+         SignalCRC=bitstream;                       // not seen the RF packet recently
       } else {
-         // already seen the RF packet recently
-         return true;
-      }
+         return true;                               // already seen the RF packet recently
+      }      
       //==================================================================================
       // all bytes received, make sure checksum is okay
       //==================================================================================
-      checksum = (bitstream)&0xf;                  // Second block 
-      if (checksum != 0) {                         // last 4 bits should always be 0
-         return false; 
-      }
+      checksum = (bitstream)&0xf;                   // Second block 
+      if (checksum != 0) return false;              // last 4 bits should always be 0
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( pbuffer );
+      Serial.print("20;");
+      PrintHexByte(PKSequenceNumber++);
+      Serial.print(F(";SelectPlus;"));              // Label
       // ----------------------------------
-      Serial.print(F("SelectPlus;"));               // Label
       sprintf(pbuffer, "ID=%04x;",((bitstream)>>4)&0xffff ); // ID    
       Serial.print( pbuffer );
       Serial.print(F("SWITCH=1;CMD=ON;"));  
       Serial.print(F("CHIME=01;"));
       Serial.println();
       //==================================================================================
-      RawSignal.Repeats=true;                          // suppress repeats of the same RF packet
+      RawSignal.Repeats=true;                       // suppress repeats of the same RF packet
       RawSignal.Number=0;                           // do not process the packet any further
-      success = true;                               // processing successful
-#endif // PLUGIN_070_CORE
-  return success;
+  return true;
 }
+#endif // PLUGIN_070
+
+#ifdef PLUGIN_TX_070
+void SelectPlus_Send(unsigned long address);
 
 boolean PluginTX_070(byte function, char *string) {
-  boolean success=false;
-  #ifdef PLUGIN_TX_070_CORE
+        boolean success=false;
         unsigned long bitstream=0L;  
         //10;SELECTPLUS;001c33;1;OFF;
         //012345678901234567890123456
@@ -117,11 +111,9 @@ boolean PluginTX_070(byte function, char *string) {
            SelectPlus_Send(bitstream);                // Send RF packet
            success=true;                            
         }
-  #endif // PLUGIN_070_CORE
-  return success;
+        return success;
 }
           
-#ifdef PLUGIN_TX_070_CORE
 void SelectPlus_Send(unsigned long address) {
     int fpulse = 364;                               // Pulse witdh in microseconds
     int fretrans = 16;                              // number of RF packet retransmissions        
@@ -168,4 +160,4 @@ void SelectPlus_Send(unsigned long address) {
     digitalWrite(PIN_RF_RX_VCC,HIGH);               // Enable the 433Mhz receiver
     RFLinkHW();
 }
-#endif // PLUGIN_070_CORE
+#endif // PLUGIN_070

@@ -8,10 +8,10 @@
  * models: THC238, THC268, THN132N, THWR288A, THRN122N, THN122N, AW129, AW131, THGR268, THGR122X,
  *         THGN122N, THGN123N, THGR122NX, THGR228N, THGR238, WTGR800, THGR918, THGRN228NX, THGN500,
  *         THGR810, RTGR328N, THGR328N, Huger BTHR918, BTHR918N, BTHR968, RGR126, RGR682, RGR918, PCR122
- *         THWR800, THR128, THR138, THC138, OWL CM119, cent-a-meter, OWL CM113, Electrisave 
+ *         THWR800, THR128, THR138, THC138, OWL CM119, cent-a-meter, OWL CM113, Electrisave, RGR928 
  *         UVN128, UV138, UVN800, Huger-STR918, WGR918, WGR800, PCR800, WGTR800, RGR126, BTHG968
  *
- * Author             : StuntTeam
+ * Author             : StuntTeam, Thibaut Girka 
  * Support            : http://sourceforge.net/projects/rflink/
  * License            : This code is free for use in any open source project when this header is included.
  *                      Usage of any parts of this code in a commercial application is prohibited!  
@@ -29,9 +29,10 @@
  * is furnished to do so, subject to the following conditions:
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  \*********************************************************************************************/
-#define OSV3_PULSECOUNT_MIN 126 
+#define OSV3_PULSECOUNT_MIN 50  // 126
 #define OSV3_PULSECOUNT_MAX 290 // make sure to check the max length in plugin 1 as well..!
 
+#ifdef PLUGIN_048
 /*
  * Many devices use 160 bits, known exceptions:
  * 0xEA4c         136 bits  // TH132N
@@ -141,9 +142,10 @@ public:
 	}
 };
 
-class OregonDecoderV1 : public DecodeOOK {
+/*
+class OregonDecoderV1_org : public DecodeOOK {
 	public:
-		OregonDecoderV1() {}
+		OregonDecoderV1_org() {}
 			virtual char decode(word width) {
 			if (200 <= width && width < 1200) {
 				byte w = width >= 700;
@@ -158,18 +160,18 @@ class OregonDecoderV1 : public DecodeOOK {
 						else
 							return -1;
 						break;
-						case OK:
-							if (w == 0)
-								state = T0;
-							else
-								manchester(1);
-							break;
-							case T0:
-								if (w == 0)
-									manchester(0);
-								else
-									return -1;
-								break;
+					case OK:
+						if (w == 0)
+							state = T0;
+						else
+							manchester(1);
+						break;
+					case T0:
+						if (w == 0)
+							manchester(0);
+						else
+							return -1;
+						break;
 				}
 				return 0;
 			}
@@ -177,6 +179,67 @@ class OregonDecoderV1 : public DecodeOOK {
 				return 1;
 			return -1;
 		}
+}; 
+*/
+class OregonDecoderV1 : public DecodeOOK {
+	public:
+		OregonDecoderV1() {}
+			virtual char decode(word width) {
+			if (900 <= width && width < 3400) {
+				byte w = width >= 2000;
+				switch (state) {
+					case UNKNOWN:                   // Detect preamble
+						if (w == 0)
+							++flip;
+						else 
+                        	return -1;
+						break;
+					case OK:
+						if (w == 0)
+							state = T0;
+						else
+							manchester(1);
+						break;
+					case T0:
+						if (w == 0)
+							manchester(0);
+						else
+							return -1;
+                        break;
+					default:						// Unexpected state
+						return -1;                                
+				}
+				return (pos == 4) ? 1 : 0; // Messages are fixed-size
+			}
+			if (width >= 3400) {
+				if (flip < 10 || flip > 50)
+					return -1; // No preamble
+				switch (state) {
+					case UNKNOWN:
+						// First sync pulse, lowering edge
+						state = T1;
+						break;
+					case T1:
+						// Second sync pulse, lowering edge
+						state = T2;
+						break;
+					case T2:
+						// Last sync pulse, determines the first bit!
+						// XXX: Not completely sure about the order or
+						// timings, mine is always around 4700
+						if (width >= 4600) {
+							state = T0;
+							flip = 1;
+						} else {
+							state = OK;
+							flip = 0;
+						}
+					break;
+				}
+ 				return 0;
+ 			}
+ 			return -1;
+ 		}
 };
 
 class OregonDecoderV2 : public DecodeOOK {
@@ -363,9 +426,6 @@ byte checksum(byte type, int count, byte check) {
 }
 // =====================================================================================================
 boolean Plugin_048(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_048_CORE
       if ((RawSignal.Number < OSV3_PULSECOUNT_MIN) || (RawSignal.Number > OSV3_PULSECOUNT_MAX) ) return false; 
 
       byte rc=0;
@@ -436,19 +496,23 @@ boolean Plugin_048(byte function, char *string) {
             return false;
          }
          // -------------       
-         temp = ((osdata[2]>>4) * 100)  + ((osdata[1] & 0x0F) * 10) + ((osdata[1] >> 4));
-         if ((osdata[2] & 0x02) == 2) temp=temp | 0x8000;  // bit 1 set when temp is negative, set highest bit on temp valua
+         //temp = ((osdata[2]>>4) * 100)  + ((osdata[1] & 0x0F) * 10) + ((osdata[1] >> 4));
+         //if ((osdata[2] & 0x02) == 2) temp=temp | 0x8000;  // bit 1 set when temp is negative, set highest bit on temp valua
+         temp = ((osdata[2] & 0x0F) * 100)  + ((osdata[1] >> 4) * 10) + ((osdata[1] & 0x0F));
+         if ((osdata[2] & 0x20) == 0x20) temp=temp | 0x8000;  // bit 1 set when temp is negative, set highest bit on temp valua
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
+        Serial.print(F(";OregonV1;ID=00"));           // Label
+        //sprintf(pbuffer, "ID=00%02x;", rc & 0xCF);       
+        PrintHexByte((rc)&0xcf);                      // rolling code + channel
         // ----------------------------------
-        Serial.print(F("OregonV1;"));                    // Label
-        sprintf(pbuffer, "ID=00%02x;", rc);               // ID    
+        sprintf(pbuffer, ";TEMP=%04x;", temp);     
         Serial.print( pbuffer );
-        sprintf(pbuffer, "TEMP=%04x;", temp);     
-        Serial.print( pbuffer );
+        Serial.println();
+        PrintHex8(osdata,4);                      // rolling code + channel
         Serial.println();
       } 
       // ==================================================================================
@@ -476,13 +540,13 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
+        Serial.print(F(";Oregon Temp;ID="));           // Label
+        PrintHexByte(rc);
+        PrintHexByte(osdata[2]);
         // ----------------------------------
-        Serial.print(F("Oregon Temp;"));                    // Label
-        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( pbuffer );
-        sprintf(pbuffer, "TEMP=%04x;", temp);     
+        sprintf(pbuffer, ";TEMP=%04x;", temp);     
         Serial.print( pbuffer );
         if ((osdata[3] & 0x0F) >= 4) {
            Serial.print(F("BAT=LOW;")); 
@@ -522,13 +586,13 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
+        Serial.print(F(";Oregon TempHygro;ID="));           // Label
+        PrintHexByte(osdata[1]);
+        PrintHexByte(osdata[3]);
         // ----------------------------------
-        Serial.print(F("Oregon TempHygro;"));            // Label
-        sprintf(pbuffer, "ID=%02x%02x;", osdata[1],osdata[3]);   // ID    
-        Serial.print( pbuffer );
-        sprintf(pbuffer, "TEMP=%04x;", temp);     
+        sprintf(pbuffer, ";TEMP=%04x;", temp);     
         Serial.print( pbuffer );
         sprintf(pbuffer, "HUM=%02x;", hum);     
         Serial.print( pbuffer );
@@ -585,13 +649,13 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
+        Serial.print(F(";Oregon BTHR;ID="));           // Label
+        PrintHexByte(rc);
+        PrintHexByte(osdata[2]);
         // ----------------------------------
-        Serial.print(F("Oregon BTHR;"));                    // Label
-        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( pbuffer );
-        sprintf(pbuffer, "TEMP=%04x;", temp);     
+        sprintf(pbuffer, ";TEMP=%04x;", temp);     
         Serial.print( pbuffer );
         sprintf(pbuffer, "HUM=%02x;", hum);     
         Serial.print( pbuffer );
@@ -613,7 +677,7 @@ boolean Plugin_048(byte function, char *string) {
       // ==================================================================================
       // 2914  Rain Gauge:
       // 2d10  Rain Gauge:
-      // 2a1d  Rain Gauge: RGR126, RGR682, RGR918, PCR122
+      // 2a1d  Rain Gauge: RGR126, RGR682, RGR918, RGR928, PCR122
       // 2A1D0065502735102063 
       // 2+A+1+D+0+0+6+5+5+0+2+7+3+5+1+0+2+0=3e-a=34 != 63 
       // 2+A+1+D+0+0+6+5+5+0+2+7+3+5+1+0+2+0+6=44-a=3A 
@@ -637,13 +701,13 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
+        Serial.print(F(";Oregon Rain;ID="));           // Label
+        PrintHexByte(rc);
+        PrintHexByte(osdata[3]);
         // ----------------------------------
-        Serial.print(F("Oregon Rain;"));                 // Label
-        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[3]);   // ID    
-        Serial.print( pbuffer );
-        sprintf(pbuffer, "RAIN=%04x;", rain);     
+        sprintf(pbuffer, ";RAIN=%04x;", rain);     
         Serial.print( pbuffer );
         sprintf(pbuffer, "RAINTOT=%04x;", raintot);     
         Serial.print( pbuffer );
@@ -675,13 +739,13 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
+        Serial.print(F(";Oregon Rain2;ID="));           // Label
+        PrintHexByte(rc);
+        PrintHexByte(osdata[4]);
         // ----------------------------------
-        Serial.print(F("Oregon Rain2;"));                   // Label
-        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[4]);   // ID    
-        Serial.print( pbuffer );
-        sprintf(pbuffer, "RAIN=%04x;", rain);     
+        sprintf(pbuffer,";RAIN=%04x;", rain);     
         Serial.print( pbuffer );
         //sprintf(pbuffer, "RAINTOT=%04x;", raintot);     
         //Serial.print( pbuffer );
@@ -705,11 +769,7 @@ boolean Plugin_048(byte function, char *string) {
       // 1+A+8+9+0+4+8+8+0+0+C+0+0+4+3+1+1+0=45-a=3b
       if(id == 0x1a89) { // Wind sensor
         if ( checksum(1,9,osdata[9]) !=0) return false;
-        //Serial.print(" WDIR=");
-        wdir=(osdata[4] >> 4);
-        wdir=wdir*225;
-        wdir=wdir/10;
-        //Serial.print(wdir); 
+        wdir=((osdata[4] >> 4) & 0x0f);
         // -------------       
         wspeed = (osdata[6] >> 4) * 10;
         wspeed = wspeed + (osdata[6] &0x0f) * 100;
@@ -721,13 +781,13 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
+        Serial.print(F(";Oregon Wind;ID="));           // Label
+        PrintHexByte(rc);
+        PrintHexByte(osdata[2]);
         // ----------------------------------
-        Serial.print(F("Oregon Wind;"));                    // Label
-        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( pbuffer );
-        sprintf(pbuffer, "WDIR=%04x;", wdir);     
+        sprintf(pbuffer, ";WINDIR=%04d;", wdir);     
         Serial.print( pbuffer );
         sprintf(pbuffer, "WINSP=%04x;", wspeed);     
         Serial.print( pbuffer );
@@ -753,18 +813,19 @@ boolean Plugin_048(byte function, char *string) {
             return false;
         }
         wdir = ((osdata[5]>>4) * 100)  + ((osdata[5] & 0x0F * 10) ) + (osdata[4] >> 4);    
+        wdir=wdir / 22.5;
         wspeed = ((osdata[7] & 0x0F) * 100)  + ((osdata[6]>>4) * 10)  + ((osdata[6] & 0x0F)) ;
         awspeed = ((osdata[8]>>4) * 100)  + ((osdata[8] & 0x0F) * 10)+((osdata[7] >>4)) ;      
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
+        Serial.print(F(";Oregon Wind2;ID="));           // Label
+        PrintHexByte(rc);
+        PrintHexByte(osdata[2]);
         // ----------------------------------
-        Serial.print(F("Oregon Wind2;"));                   // Label
-        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( pbuffer );
-        sprintf(pbuffer, "WDIR=%04x;", wdir);     
+        sprintf(pbuffer, ";WINDIR=%04d;", wdir);     
         Serial.print( pbuffer );
         sprintf(pbuffer, "WINSP=%04x;", wspeed);     
         Serial.print( pbuffer );
@@ -788,13 +849,13 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
+        Serial.print(F(";Oregon UVN128/138;ID="));           // Label
+        PrintHexByte(rc);
+        PrintHexByte(osdata[2]);
         // ----------------------------------
-        Serial.print(F("Oregon UVN128/138;"));           // Label
-        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( pbuffer );
-        sprintf(pbuffer, "UV=%04x;", uv);     
+        sprintf(pbuffer, ";UV=%04x;", uv);     
         Serial.print( pbuffer );
         if ((osdata[3] & 0x0F) >= 4) {
            Serial.print(F("BAT=LOW;")); 
@@ -813,13 +874,13 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
+        Serial.print(F(";Oregon UVN800;ID="));               // Label
+        PrintHexByte(rc);
+        PrintHexByte(osdata[2]);
         // ----------------------------------
-        Serial.print(F("Oregon UVN800;"));               // Label
-        sprintf(pbuffer, "ID=%02x%02x;", rc,osdata[2]);   // ID    
-        Serial.print( pbuffer );
-        sprintf(pbuffer, "UV=%04x;", uv);     
+        sprintf(pbuffer, ";UV=%04x;", uv);     
         Serial.print( pbuffer );
         if ((osdata[3] & 0x0F) >= 4) {
            Serial.print(F("BAT=LOW;")); 
@@ -848,24 +909,6 @@ boolean Plugin_048(byte function, char *string) {
       // 0 1 2 3 4 5 6 7 8 9 0 1 2
       // 8+A+E+A+1+3+7+8+0+7+7+2+1+4+9+2+4+2+4+2+C+1+6+C=88 !=   BD
       // Date & Time
-      //if( (id &0xfff) == 0xaea) { 
-      //  Serial.print("RTGR328N RC: ");
-      //  Serial.print(osdata[3], HEX);
-      //  Serial.print(" Date: ");
-      //  Serial.print( (osdata[9] >> 4) + 10 * (osdata[10] & 0xf) );
-      //  Serial.print(" - ");
-      //  Serial.print( osdata[8] >> 4 );
-      //  Serial.print(" - ");
-      //  Serial.print( (osdata[7] >> 4) + 10 * (osdata[8] & 0xf) );
-      //  Serial.print(" Time: ");
-      //  Serial.print( (osdata[6] >> 4) + 10 * (osdata[7] & 0xf) );
-      //  Serial.print(":");
-      //  Serial.print((osdata[5] >> 4) + 10 * (osdata[6] & 0xf));
-      //  Serial.print(":");
-      //  Serial.print((osdata[4] >> 4) + 10 * (osdata[5] & 0xf));
-      //  Serial.println();
-      //  break;
-      //}  
       // ==================================================================================
       // eac0  Ampere meter: cent-a-meter, OWL CM113, Electrisave
       // ==================================================================================
@@ -874,14 +917,11 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
         // ----------------------------------
-        Serial.print(F("Oregon Unknown;DEBUG="));                 // Label
-        for(byte x=0; x<13;x++) {
-           Serial.print( osdata[x],HEX ); 
-           Serial.print((" ")); 
-        }
+        Serial.print(F(";Oregon Unknown;DEBUG="));                 // Label
+        PrintHex8( osdata, 13);
         Serial.println(";");  
       } else  
       // ==================================================================================
@@ -900,14 +940,11 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
         // ----------------------------------
-        Serial.print(F("Oregon Unknown;DEBUG="));                // Label
-        for(byte x=0; x<13;x++) {
-           Serial.print( osdata[x],HEX ); 
-           Serial.print((" ")); 
-        }
+        Serial.print(F(";Oregon Unknown;DEBUG="));                // Label
+        PrintHex8( osdata, 13);
         Serial.println(";");  
       } else    
       // ==================================================================================
@@ -915,20 +952,16 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         // Output
         // ----------------------------------
-        sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-        Serial.print( pbuffer );
+        Serial.print("20;");
+        PrintHexByte(PKSequenceNumber++);
         // ----------------------------------
-        Serial.print(F("Oregon Unknown;DEBUG="));                // Label
-        for(byte x=0; x<13;x++) {
-           Serial.print( osdata[x],HEX ); 
-           Serial.print((" ")); 
-        }
+        Serial.print(F(";Oregon Unknown;DEBUG="));                // Label
+        PrintHex8( osdata, 13);
         Serial.println(";");  
       }
       // ==================================================================================
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet 
       RawSignal.Number=0;
-      success = true;
-#endif // PLUGIN_048_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_048

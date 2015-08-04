@@ -30,22 +30,24 @@
  \*********************************************************************************************/
 #define ALARMPIRV1_PULSECOUNT 50
 
-boolean Plugin_061(byte function, char *string) {
-  boolean success=false;
+#define ALARMPIRV1_PULSEMID  600/RAWSIGNAL_SAMPLE_RATE
+#define ALARMPIRV1_PULSEMAX  1300/RAWSIGNAL_SAMPLE_RATE
+#define ALARMPIRV1_PULSEMIN  150/RAWSIGNAL_SAMPLE_RATE
 
-#ifdef PLUGIN_061_CORE
+#ifdef PLUGIN_061
+boolean Plugin_061(byte function, char *string) {
+      if (RawSignal.Number != ALARMPIRV1_PULSECOUNT) return false;
       unsigned long bitstream=0L;
       unsigned long bitstream2=0L;
       //==================================================================================
-      if (RawSignal.Number != ALARMPIRV1_PULSECOUNT) return false;
       for(byte x=2;x<=48;x=x+2) {
-        if (RawSignal.Pulses[x]*RawSignal.Multiply > 600) {
-           if (RawSignal.Pulses[x]*RawSignal.Multiply > 1300) return false;
-           if (RawSignal.Pulses[x-1]*RawSignal.Multiply > 600) return false; // invalid manchestercode
+        if (RawSignal.Pulses[x] > ALARMPIRV1_PULSEMID) {
+           if (RawSignal.Pulses[x] > ALARMPIRV1_PULSEMAX) return false;   // pulse too long
+           if (RawSignal.Pulses[x-1] > ALARMPIRV1_PULSEMID) return false; // invalid pulse sequence 10/01
            bitstream = (bitstream << 1) | 0x1; 
         } else { 
-           if (RawSignal.Pulses[x]*RawSignal.Multiply < 150) return false;
-           if (RawSignal.Pulses[x-1]*RawSignal.Multiply < 600) return false; // invalid manchestercode
+           if (RawSignal.Pulses[x] < ALARMPIRV1_PULSEMIN) return false;   // pulse too short
+           if (RawSignal.Pulses[x-1] < ALARMPIRV1_PULSEMID) return false; // invalid pulse sequence 10/01
            bitstream = bitstream << 1;
         }
       }
@@ -80,8 +82,6 @@ boolean Plugin_061(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                       // suppress repeats of the same RF packet
       RawSignal.Number=0;
-      success=true;
-#endif // Plugin_061_CORE
-  return success;
+      return true;
 }
-
+#endif // Plugin_061

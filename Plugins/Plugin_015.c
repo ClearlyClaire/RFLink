@@ -40,18 +40,14 @@
  * Address  150,200,125,1175,150,1175,150,1175,125,1175,150,200,125,200,150,1175,125,1175,150,200,125,1175,125,1175,150,200,150,200,150,1175,150,200,150,1175,150,200,150,1175,150,200,150,200,125,1175,150,200,125,1175,150,1175,125,1175,150,200,125,200,125,200,150,200,125,1175,150,1175,
  * Command  150,1175,150,200,150,200,125,200,150,1175,150,1175,150,1175,150,1175,125,200,150,200,125,1175,125,200,125,1175,150,1150,  - 125;
  \*********************************************************************************************/
- 
 #define HomeEasy_LongLow        0x490    // us
 #define HomeEasy_ShortHigh      200      // us
 #define HomeEasy_ShortLow       150      // us
 #define HomeEasy_PulseLength    116
+#define HomeEasy_PULSEMID  500/RAWSIGNAL_SAMPLE_RATE
 
+#ifdef PLUGIN_015
 boolean Plugin_015(byte function, char *string) {
-  boolean success=false;
-
-  #ifdef PLUGIN_015_CORE
-      //==================================================================================
-      // valid messages are 116 pulses          
       if (RawSignal.Number != HomeEasy_PulseLength) return false;
       unsigned long preamble = 0L;
       unsigned long address = 0L;
@@ -63,7 +59,7 @@ boolean Plugin_015(byte function, char *string) {
       
       // convert pulses into bit sections (preamble, address, bitstream)
       for(byte x=1;x<=HomeEasy_PulseLength;x=x+2) {
-         if ((RawSignal.Pulses[x]*RawSignal.Multiply < 500) & (RawSignal.Pulses[x+1]*RawSignal.Multiply > 500)) 
+         if ((RawSignal.Pulses[x] < HomeEasy_PULSEMID) && (RawSignal.Pulses[x+1] > HomeEasy_PULSEMID)) 
             rfbit = 1;
          else
             rfbit = 0;
@@ -75,9 +71,7 @@ boolean Plugin_015(byte function, char *string) {
       //==================================================================================
       // To prevent false positives make sure the preamble is correct, 
       // it should always be 0x63c but we compare only 10 bits to compensate for the first bit being seen incorrectly 
-      if ( (preamble & 0x3ff) != 0x23c) {          // comparing 10 bits is enough to make sure the packet is valid
-         return false;        
-      }
+      if ( (preamble & 0x3ff) != 0x23c) return false;       // comparing 10 bits is enough to make sure the packet is valid
       //==================================================================================
       // Prevent repeating signals from showing up
       //==================================================================================
@@ -115,24 +109,22 @@ boolean Plugin_015(byte function, char *string) {
       Serial.print( pbuffer );
       Serial.println();     
       // ----------------------------------
-      RawSignal.Repeats    = true; // het is een herhalend signaal. Bij ontvangst herhalingen onderdrukken.
-      success=true;
-#endif // PLUGIN_015_CORE
-  return success;
+      RawSignal.Repeats = true; // het is een herhalend signaal. Bij ontvangst herhalingen onderdrukken.
+      return true;
 }
+#endif // PLUGIN_015
 
+#ifdef PLUGIN_TX_015
 boolean PluginTX_015(byte function, char *string) {
-  boolean success=false;
-  unsigned long bitstream = 0L;
-  unsigned long preamble = 0L;
-      #ifdef PLUGIN_TX_015_CORE
-
+        boolean success=false;
         //10;HomeEasy;7900b200;b;ON;
         //10;HomeEasy;d900ba00;23;OFF;
         //10;HomeEasy;79b2a5c3;b;ON;
         //01234567890123456789012345  
         if (strncasecmp(InputBuffer_Serial+3,"HOMEEASY;",9) == 0) { // KAKU Command eg. 
-           if (InputBuffer_Serial[20] != ';') return success;
+           if (InputBuffer_Serial[20] != ';') return false;
+           unsigned long bitstream = 0L;
+           unsigned long preamble = 0L;
            byte cmd=0;
            byte group=0;
            InputBuffer_Serial[10]=0x30;
@@ -227,6 +219,6 @@ boolean PluginTX_015(byte function, char *string) {
            //-----------------------------------------------
            success=true;
         }
-  #endif // PLUGIN_015_CORE
-  return success;
+        return success;
 }
+#endif // PLUGIN_TX_015

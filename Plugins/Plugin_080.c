@@ -35,16 +35,13 @@
 #define FA20RFHIGH                  2550    // 2600
 #define FA20_PULSECOUNT             52
 
+#ifdef PLUGIN_080
 boolean Plugin_080(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_080_CORE
       if (RawSignal.Number != FA20_PULSECOUNT) return false;
-
       unsigned long bitstream=0L;
       for(byte x=4;x<=FA20_PULSECOUNT-2;x=x+2) {
-        if (RawSignal.Pulses[x-1]*RawSignal.Multiply > 1000) return false; // every preceding puls must be < 1000!
-        if (RawSignal.Pulses[x]*RawSignal.Multiply > 1800) bitstream = (bitstream << 1) | 0x1; 
+        if (RawSignal.Pulses[x-1]*RAWSIGNAL_SAMPLE_RATE > 1000) return false; // every preceding puls must be < 1000!
+        if (RawSignal.Pulses[x]*RAWSIGNAL_SAMPLE_RATE > 1800) bitstream = (bitstream << 1) | 0x1; 
         else bitstream = bitstream << 1;
       }
       if (bitstream == 0) return false;
@@ -64,26 +61,25 @@ boolean Plugin_080(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                          // suppress repeats of the same RF packet
       RawSignal.Number=0;                              // do not process the packet any further
-      success = true;                                  // processing successful
-#endif // PLUGIN_080_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_080
 
+#ifdef PLUGIN_TX_080
 boolean PluginTX_080(byte function, char *string) {
-  boolean success=false;
-      #ifdef PLUGIN_TX_080_CORE
+      boolean success=false;
       //10;SmokeAlert;123456;ON;
       //012345678901234567890
       unsigned long bitstream=0;
       if (strncasecmp(InputBuffer_Serial+3,"SmokeAlert;",11) == 0) { // KAKU Command eg. 
-         if (InputBuffer_Serial[20] != ';') return success;
+         if (InputBuffer_Serial[20] != ';') return false;
          InputBuffer_Serial[12]=0x30;
          InputBuffer_Serial[13]=0x78;
          InputBuffer_Serial[20]=0;
          bitstream=str2int(InputBuffer_Serial+12); 
          // ---------- SMOKEALERT SEND -----------
          RawSignal.Multiply=50;
-         RawSignal.Repeats=8;
+         RawSignal.Repeats=10;
          RawSignal.Delay=20;
          RawSignal.Pulses[1]=FA20RFSTART/RawSignal.Multiply;
          //RawSignal.Pulses[2]=FA20RFSPACE/RawSignal.Multiply;
@@ -103,8 +99,8 @@ boolean PluginTX_080(byte function, char *string) {
          RawSignal.Number=52;
          RawSendRF();
          RawSignal.Multiply=25;                     // restore setting
-         success=true;
+         success=true;        
       }        
-  #endif // PLUGIN_080_CORE
-  return success;
+      return success;
 }
+#endif // PLUGIN_080

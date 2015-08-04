@@ -34,12 +34,9 @@
  \*********************************************************************************************/
 #define AURIOLV3_PULSECOUNT 82
 
+#ifdef PLUGIN_044
 boolean Plugin_044(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_044_CORE
       if (RawSignal.Number != AURIOLV3_PULSECOUNT) return false;
-
       unsigned long bitstream1=0L;
       unsigned long bitstream2=0L;
       byte rc=0;
@@ -54,7 +51,7 @@ boolean Plugin_044(byte function, char *string) {
         if (RawSignal.Pulses[x]*RawSignal.Multiply > 3500) {
             if (bitcounter < 16) {
                bitstream1 = (bitstream1 << 1) | 0x1;
-               bitcounter++;                     // only need to count the first 10 bits
+               bitcounter++;                        // only need to count the first 10 bits
             } else {
                bitstream2 = (bitstream2 << 1) | 0x1;
             }
@@ -63,7 +60,7 @@ boolean Plugin_044(byte function, char *string) {
             if (RawSignal.Pulses[x]*RawSignal.Multiply < 1500) return false;
             if (bitcounter < 16) {
                bitstream1 = (bitstream1 << 1); 
-               bitcounter++;                     // only need to count the first 10 bits
+               bitcounter++;                        // only need to count the first 10 bits
             } else {
                bitstream2 = (bitstream2 << 1); 
             }
@@ -73,13 +70,10 @@ boolean Plugin_044(byte function, char *string) {
       // Perform sanity checks and prevent repeating signals from showing up
       //==================================================================================
       if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer<millis()) ) { 
-         // not seen the RF packet recently
-         if (bitstream1 == 0) return false;
+         if (bitstream1 == 0) return false;         // not seen the RF packet recently
          if (bitstream2 == 0) return false;
-         // All is fine
       } else {
-         // already seen the RF packet recently
-         return true;
+         return true;                               // already seen the RF packet recently
       } 
       //==================================================================================
       rc = (bitstream1 >> 8) & 0xff ;               // get rolling code
@@ -98,21 +92,20 @@ boolean Plugin_044(byte function, char *string) {
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( pbuffer );
+      Serial.print("20;");
+      PrintHexByte(PKSequenceNumber++);
+      Serial.print(F(";Auriol V3;ID="));            // Label
+      PrintHexByte(rc);
+      PrintHexByte(channel);
       // ----------------------------------
-      Serial.print(F("Auriol V3;"));                   // Label
-      sprintf(pbuffer, "ID=%02x%02x;", rc,channel);  // ID    
+      sprintf(pbuffer, ";TEMP=%04x;", temperature); // temp  
       Serial.print( pbuffer );
-      sprintf(pbuffer, "TEMP=%04x;", temperature);   // temp  
-      Serial.print( pbuffer );
-      sprintf(pbuffer, "HUM=%02x;", humidity);       // hum
+      sprintf(pbuffer, "HUM=%02x;", humidity);      // hum
       Serial.print( pbuffer );
       Serial.println();
       //==================================================================================
       RawSignal.Repeats=true;                       // suppress repeats of the same RF packet 
       RawSignal.Number=0;
-      success = true;
-#endif // PLUGIN_044_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_044

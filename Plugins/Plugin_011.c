@@ -53,19 +53,15 @@
  * 2675,200,600,200,600,700,100,700,100,200,600,700,100,700,100,200,600,700,100,225,600,725,75,225,600,225,575,725,75,225,575,225,575,225,575,725,75,725,75,725,75,725,75,225,575,725,75,225,575,225,575,225,575,225,575,225,575,250,575,250,575,250,575,250,575,250,550,250,550,250,550,250,550,250,550,250,550,250,550,250,575,725,75,250,550,250,550,250,550,250,550,250,550,250,550,750,50,250,50
  
  \*********************************************************************************************/
-#define PLUGIN_ID 11
-
 #define HC_PULSECOUNT 100
 
-void HomeConfort_Send(unsigned long bitstream1, unsigned long bitstream2);
-
+#ifdef PLUGIN_011
 boolean Plugin_011(byte function, char *string) {
-  boolean success=false;
+      if (RawSignal.Number != HC_PULSECOUNT ) return false; 
+      if (RawSignal.Pulses[1]*RawSignal.Multiply < 2000) return false; // First (start) pulse needs to be long
 
-#ifdef PLUGIN_011_CORE
       unsigned long bitstream1=0;                   // holds first 32 bits 
       unsigned long bitstream2=0;                   // holds last bit
-
       byte bitcounter=0;                            // counts number of received bits (converted from pulses)
       byte command=0;
       byte button=0;
@@ -73,9 +69,6 @@ boolean Plugin_011(byte function, char *string) {
       byte subchan=0;
       byte group=0;
       byte start=0;
-
-      if (RawSignal.Number != HC_PULSECOUNT ) return false; 
-      if (RawSignal.Pulses[1]*RawSignal.Multiply < 2000) return false; // First (start) pulse needs to be long
       //==================================================================================
       for(int x=2;x < HC_PULSECOUNT-2;x+=2) {       // get bytes
          if (RawSignal.Pulses[x]*RawSignal.Multiply > 500) { // long pulse
@@ -142,15 +135,15 @@ boolean Plugin_011(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                       // suppress repeats of the same RF packet
       RawSignal.Number=0;
-      success = true;
-#endif // PLUGIN_011_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_011
+
+#ifdef PLUGIN_TX_011
+void HomeConfort_Send(unsigned long bitstream1, unsigned long bitstream2);
 
 boolean PluginTX_011(byte function, char *string) {
-  boolean success=false;
-      #ifdef PLUGIN_TX_011_CORE
-
+        boolean success=false;
         //10;IMPULS;01b523;D3;ON;
         //012345678901234567890123
         if (strncasecmp(InputBuffer_Serial+3,"IMPULS;",7) == 0) { // KAKU Command eg. 
@@ -208,15 +201,13 @@ boolean PluginTX_011(byte function, char *string) {
            HomeConfort_Send(bitstream1,bitstream2);                // bitstream to send
            success=true;
         }
-#endif // PLUGIN_011_CORE
-  return success;
+        return success;
 }
 
-#ifdef PLUGIN_TX_011_CORE
-void HomeConfort_Send(unsigned long bitstream1, unsigned long bitstream2) { 
 #define PLUGIN_011_RFLOW        300
 #define PLUGIN_011_RFHIGH       800
 
+void HomeConfort_Send(unsigned long bitstream1, unsigned long bitstream2) { 
      RawSignal.Repeats=3;                             // Number of RF packet retransmits
      RawSignal.Delay=125;                             // Delay between RF packets
      RawSignal.Number=100;                            // Length
@@ -258,4 +249,4 @@ void HomeConfort_Send(unsigned long bitstream1, unsigned long bitstream2) {
      
      RawSendRF();
 }
-#endif // PLUGIN_011_CORE
+#endif // PLUGIN_TX_011

@@ -45,31 +45,31 @@ boolean FetchSignal(byte DataPin, boolean StateSignal) {
      // rust tussen de signalen.Op deze wijze wordt het aantal zinloze captures teruggebracht.
      if (RawSignal.Time) {                                                       //  Eerst een snelle check, want dit bevindt zich in een tijdkritisch deel...
         if (RawSignal.Repeats && (RawSignal.Time+SIGNAL_REPEAT_TIME)>millis()) { // ...want deze check duurt enkele micro's langer!
-           PulseLength=micros()+SIGNAL_TIMEOUT*1000;                             // Wachttijd
+           PulseLength=micros()+SIGNAL_TIMEOUT*1000;                             // delay
            while ((RawSignal.Time+SIGNAL_REPEAT_TIME)>millis() && PulseLength>micros())
            if ((*portInputRegister(Fport) & Fbit) == FstateMask)
                   PulseLength=micros()+SIGNAL_TIMEOUT*1000;
            while((RawSignal.Time+SIGNAL_REPEAT_TIME)>millis() &&  (*portInputRegister(Fport) & Fbit) != FstateMask);
         }
      }
-     RawCodeLength=1;                                                            // We starten bij 1, dit om legacy redenen. Vroeger had element 0 een speciaal doel.
+     RawCodeLength=1;                                                            // Start at 1 for legacy reasons. Element 0 can be used to pass special information like plugin number etc.
      Ftoggle=false;                  
      maxloops = (SIGNAL_TIMEOUT * LoopsPerMilli);  
-     do{                                                                         // lees de pulsen in microseconden en plaats deze in de tijdelijke buffer RawSignal
+     do{                                                                         // read the pulses in microseconds and place them in temporary buffer RawSignal
        numloops = 0;
        while (((*portInputRegister(Fport) & Fbit) == FstateMask) ^ Ftoggle)      // while() loop *A*
-       if (numloops++ == maxloops) break;                                        // timeout opgetreden
-       PulseLength=((numloops + Overhead)* 1000) / LoopsPerMilli;                // Bevat nu de pulslengte in microseconden
-       if (PulseLength<MIN_PULSE_LENGTH) break;
+       if (numloops++ == maxloops) break;                                        // timeout 
+       PulseLength=((numloops + Overhead)* 1000) / LoopsPerMilli;                // Contains pulslength in microseconds
+       if (PulseLength<MIN_PULSE_LENGTH) break;                                  // Pulse length too short
        Ftoggle=!Ftoggle;    
-       RawSignal.Pulses[RawCodeLength++]=PulseLength/(unsigned long)(RAWSIGNAL_SAMPLE_DEFAULT); // sla op in de tabel RawSignal
-    } while (RawCodeLength<RAW_BUFFER_SIZE && numloops<=maxloops);               // Zolang nog ruimte in de buffer, geen timeout en geen stoorpuls
+       RawSignal.Pulses[RawCodeLength++]=PulseLength/(unsigned long)(RAWSIGNAL_SAMPLE_RATE); // store in RawSignal !!!! 
+    } while (RawCodeLength<RAW_BUFFER_SIZE && numloops<=maxloops);               // For as long as there is space in the buffer, no timeout etc.
     if (RawCodeLength>=MIN_RAW_PULSES) {
-       RawSignal.Repeats=0;                                                      // Op dit moment weten we nog niet het type signaal, maar de variabele niet ongedefinieerd laten.
-       RawSignal.Multiply=RAWSIGNAL_SAMPLE_DEFAULT;                              // Ingestelde sample groote.
-       RawSignal.Number=RawCodeLength-1;                                         // Aantal ontvangen tijden (pulsen *2)
-       RawSignal.Pulses[RawSignal.Number]=0;                                     // Laatste element bevat de timeout. Niet relevant.
-       RawSignal.Time=millis();
+       RawSignal.Repeats=0;                                                      // no repeats
+       RawSignal.Multiply=RAWSIGNAL_SAMPLE_RATE;                                 // sample size.
+       RawSignal.Number=RawCodeLength-1;                                         // Number of received pulse times (pulsen *2)
+       RawSignal.Pulses[RawSignal.Number+1]=0;                                   // Last element contains the timeout. 
+       RawSignal.Time=millis();                                                  // Time the RF packet was received (to keep track of retransmits
        return true;
     } else {
       RawSignal.Number=0;    

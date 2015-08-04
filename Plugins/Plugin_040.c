@@ -44,10 +44,8 @@
    // ==================================================================================
 #define MEBUS_PULSECOUNT 58
 
+#ifdef PLUGIN_040
 boolean Plugin_040(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_040_CORE
       if (RawSignal.Number != MEBUS_PULSECOUNT) return false;
       unsigned long bitstream=0L;
       unsigned int temperature=0;
@@ -71,15 +69,13 @@ boolean Plugin_040(byte function, char *string) {
       // Prevent repeating signals from showing up
       //==================================================================================
       if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer+1000<millis() && SignalCRC != bitstream) || (SignalCRC != bitstream) ) { 
-         SignalCRC=bitstream;
-         // not seen the RF packet recently
-         if (bitstream == 0) return false;         // Perform a sanity check
+         SignalCRC=bitstream;                       // not seen the RF packet recently
+         if (bitstream == 0) return false;          // Perform a sanity check
       } else {
-         // already seen the RF packet recently
-         return true;
+         return true;                               // already seen the RF packet recently
       }
       //==================================================================================
-      data[0] = (bitstream >> 24) & 0x0f;     // prepare nibbles from bit stream
+      data[0] = (bitstream >> 24) & 0x0f;           // prepare nibbles from bit stream
       data[1] = (bitstream >> 20) & 0x0f;
       data[2] = (bitstream >> 16) & 0x0f;
       data[3] = (bitstream >> 12) & 0x0f;
@@ -107,16 +103,15 @@ boolean Plugin_040(byte function, char *string) {
       // ----------------------------------
       sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
       Serial.print( pbuffer );
-      Serial.print(F("Mebus;"));                       // Label
-      sprintf(pbuffer, "ID=%02x%02x;", rc, channel);    // ID    
+      Serial.print(F("Mebus;"));                    // Label
+      sprintf(pbuffer, "ID=%02x%02x;", rc, channel);// ID    
       Serial.print( pbuffer );
       sprintf(pbuffer, "TEMP=%04x;", temperature);     
       Serial.print( pbuffer );
       Serial.println();
       //==================================================================================
-      RawSignal.Repeats=true;                    // suppress repeats of the same RF packet
+      RawSignal.Repeats=true;                       // suppress repeats of the same RF packet
       RawSignal.Number=0;
-      success = true;
-#endif // PLUGIN_040_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_040

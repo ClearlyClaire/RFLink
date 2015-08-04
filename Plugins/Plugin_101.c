@@ -380,7 +380,7 @@ boolean Plugin_048(byte function, char *string) {
       word p = pulse;
       // ==================================================================================
       for (int x = 0; x < RawSignal.Number; x++) {
-          p = RawSignal.Pulses[x]*RawSignal.Multiply;
+          p = RawSignal.Pulses[x]*RAWSIGNAL_SAMPLE_RATE;
           if (p != 0) {
              if (orscV1.nextPulse(p)) {
                 reportSerial(orscV1);

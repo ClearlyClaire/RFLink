@@ -1,3 +1,23 @@
+R26:
+- Added: QRFDEBUG command to do faster logging of undecoded data
+- Added: VERSION command
+- Added: Powerfix/Quigg switches
+- Added: proper Lacrosse V3 WS7000 sensor support
+- Changed: config file and plugin integration
+- Changed: timeout and divider value
+- Changed: Lacrosse V2 WS2300/WS3600 plugin number to get faster processing, changed various other parts as well
+- Changed: Lacrosse V1 pulse duration checks
+- Changed: various parts to improve speed
+- Changed: Flamingo Smoke detector signal re-transmits from 8 to 10 times
+- Added: Additional tests on Alecto V1 and Alecto V4 to filter out false positives
+- Fixed: AC (NewKaku) protocol send for some device numbers
+- Fixed: little bug in UPM code
+- Fixed: Oregon wind speed reporting
+- Fixed: Wind speed calculations
+- Fixed: Wind direction reporting in all plugins
+- Fixed: AlectoV3 humidity value displaying out of range values
+- Fixed: OregonV1 decoding
+===
 R25:
 - Fixed: Eurodomest address range check
 - Fixed: Alecto V1 and V3 humidity handling
@@ -88,5 +108,5 @@ r1/2/3/4/5:
 ===
 
 Special thanks to:
-Alex, Christophe, Deennoo, John, Jonas, Gerrit, Goran, Mark, Martinus, Maurice, Paul, Pim, Remco, Richard, Rob, Sebastien, William
+Alex, Benoit, Bert, Christophe, Deennoo, Jelle, John, Jonas, Gerrit, Goran, Mark, Martinus, Maurice, Paul, Pim, Remco, Richard, Rob, Sebastien, Thibaut, William
 and everyone who contributed with feedback, suggestions, debug data, tests etc.

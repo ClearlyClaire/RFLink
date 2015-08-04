@@ -50,13 +50,19 @@ RGB Control:10001101110000101111111111001000 0  20;21;RGB SWITCH;ID=8dc2;SWITCH=
 RGB Control:10001101110000101111111111000000 1  20;23;RGB SWITCH;ID=8dc2;SWITCH=c0;CMD=
 RGB Control:10001101110000101111111101000001 1  20;25;RGB SWITCH;ID=8dc2;SWITCH=41;CMD=
  \*********************************************************************************************/
-#define RGB_MIN_PULSECOUNT 134
-#define RGB_MAX_PULSECOUNT 164
+#define RGB_MIN_PULSECOUNT  134
+#define RGB_MAX_PULSECOUNT  164
 
+#define RGB_PULSE_STHI      1500/RAWSIGNAL_SAMPLE_RATE
+#define RGB_PULSE_STLO      1200/RAWSIGNAL_SAMPLE_RATE
+#define RGB_PULSE_HIHI      1000/RAWSIGNAL_SAMPLE_RATE
+#define RGB_PULSE_HILO      750/RAWSIGNAL_SAMPLE_RATE
+#define RGB_PULSE_LOHI      625/RAWSIGNAL_SAMPLE_RATE
+#define RGB_PULSE_LOLO      250/RAWSIGNAL_SAMPLE_RATE
+
+
+#ifdef PLUGIN_010
 boolean Plugin_010(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_010_CORE
       if (RawSignal.Number < RGB_MIN_PULSECOUNT || RawSignal.Number > RGB_MAX_PULSECOUNT) return false; 
       unsigned long bitstream=0L;                   // holds first 32 bits 
 
@@ -70,7 +76,8 @@ boolean Plugin_010(byte function, char *string) {
       //==================================================================================
       for(x=1;x <RawSignal.Number-2;x++) {          // get bytes
          if (start_stop!=0x01) { 
-            if (RawSignal.Pulses[x]*RawSignal.Multiply > 1200 && RawSignal.Pulses[x]*RawSignal.Multiply < 1500) {
+            //if (RawSignal.Pulses[x]*RawSignal.Multiply > 1200 && RawSignal.Pulses[x]*RawSignal.Multiply < 1500) {
+            if (RawSignal.Pulses[x] > RGB_PULSE_STLO && RawSignal.Pulses[x] < RGB_PULSE_STHI) {
                start_stop=0x01;
                continue;
             } else {
@@ -164,7 +171,6 @@ boolean Plugin_010(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                       // suppress repeats of the same RF packet
       RawSignal.Number=0;
-      success = true;
-#endif // PLUGIN_010_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_010

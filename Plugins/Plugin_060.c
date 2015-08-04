@@ -26,22 +26,25 @@
  \*********************************************************************************************/
 #define ALARMPIRV2_PULSECOUNT 26
 
-boolean Plugin_060(byte function, char *string) {
-  boolean success=false;
+#define ALARMPIRV2_PULSEMID  700/RAWSIGNAL_SAMPLE_RATE
+#define ALARMPIRV2_PULSEMAX  1000/RAWSIGNAL_SAMPLE_RATE
+#define ALARMPIRV2_PULSESHORT 550/RAWSIGNAL_SAMPLE_RATE
+#define ALARMPIRV2_PULSEMIN  250/RAWSIGNAL_SAMPLE_RATE
 
-#ifdef PLUGIN_060_CORE
+#ifdef PLUGIN_060
+boolean Plugin_060(byte function, char *string) {
       if (RawSignal.Number != ALARMPIRV2_PULSECOUNT) return false;
       unsigned long bitstream=0L;
       byte data[3];
-      if (RawSignal.Pulses[1]*RawSignal.Multiply > 550) return false;          // First pulse is start bit and should be short!
+      if (RawSignal.Pulses[1] > ALARMPIRV2_PULSESHORT) return false;          // First pulse is start bit and should be short!
       for(byte x=2;x < ALARMPIRV2_PULSECOUNT;x=x+2) {
-          if (RawSignal.Pulses[x]*RawSignal.Multiply > 700) {                  // long pulse 800-875 (700-1000 accepted)
-             if (RawSignal.Pulses[x]*RawSignal.Multiply > 1000) return false;  // pulse too long
-             if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 700) return false; // invalid manchester code
+          if (RawSignal.Pulses[x] > ALARMPIRV2_PULSEMID) {                  // long pulse 800-875 (700-1000 accepted)
+             if (RawSignal.Pulses[x] > ALARMPIRV2_PULSEMAX) return false;  // pulse too long
+             if (RawSignal.Pulses[x+1] > ALARMPIRV2_PULSEMID) return false; // invalid manchester code
              bitstream = bitstream << 1;
           } else {                                                             // short pulse 350-425 (250-550 accepted)
-             if (RawSignal.Pulses[x]*RawSignal.Multiply < 250) return false;   // pulse too short 
-             if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 700) return false; // invalid manchester code
+             if (RawSignal.Pulses[x] < ALARMPIRV2_PULSEMIN) return false;   // pulse too short 
+             if (RawSignal.Pulses[x+1] < ALARMPIRV2_PULSEMID) return false; // invalid manchester code
              bitstream = (bitstream << 1) | 0x1; 
           }
       }
@@ -70,7 +73,6 @@ boolean Plugin_060(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                       // suppress repeats of the same RF packet
       RawSignal.Number=0;
-      success=true;
-#endif // PLUGIN_060_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_060

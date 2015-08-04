@@ -42,21 +42,17 @@
  * 20;20;DEBUG;Pulses=66;Pulses(uSec)=425,350,375,1300,375,1300,375,1350,375,375,375,1350,375,375,375,375,375,1350,375,375,375,375,375,375,400,1350,375,375,400,1350,375,1350,400,1325,400,375,400,375,400,375,400,375,400,375,400,375,400,375,400,375,400,1325,400,1325,400,1325,400,1325,400,1325,400,1350,375,1350,375;
  \*********************************************************************************************/
 #define X10_PulseLength         66
+#define X10_PULSEMID  600/RAWSIGNAL_SAMPLE_RATE
 
-void X10_Send(uint32_t address);
-
+#ifdef PLUGIN_009
 boolean Plugin_009(byte function, char *string) {
-    boolean success=false;
-    unsigned long bitstream=0L;
-  
-    #ifdef PLUGIN_009_CORE
+      if ( (RawSignal.Number != (X10_PulseLength )) && (RawSignal.Number != (X10_PulseLength+2)) ) return false; 
+      unsigned long bitstream=0L;
       byte housecode=0;
       byte unitcode=0;
       byte command=0;
 	  byte data[4]; 
       byte start=0;
-      // ==========================================================================
-      if ( (RawSignal.Number != (X10_PulseLength )) && (RawSignal.Number != (X10_PulseLength+2)) ) return false; 
       if (RawSignal.Number == X10_PulseLength+2) {
          if ( (RawSignal.Pulses[1]*RawSignal.Multiply > 3000) && (RawSignal.Pulses[2]*RawSignal.Multiply > 3000) ) {
             start=2;
@@ -66,7 +62,7 @@ boolean Plugin_009(byte function, char *string) {
       }
       // get all 24 bits
       for(byte x=2+start;x < ((X10_PulseLength)+start) ;x+=2) {
-          if(RawSignal.Pulses[x]*RawSignal.Multiply > 600) {
+          if(RawSignal.Pulses[x] > X10_PULSEMID) {
              bitstream = (bitstream << 1) | 0x1; 
          } else {
              bitstream = (bitstream << 1);
@@ -149,8 +145,8 @@ boolean Plugin_009(byte function, char *string) {
       sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
       Serial.print( pbuffer );
       // ----------------------------------
-      Serial.print(F("X10;"));                         // Label
-      sprintf(pbuffer, "ID=%02x;", 0x41+housecode);  // ID    
+      Serial.print(F("X10;"));                      // Label
+      sprintf(pbuffer, "ID=%02x;", 0x41+housecode); // ID    
       Serial.print( pbuffer );
       sprintf(pbuffer, "SWITCH=%d;", unitcode);   
       Serial.print( pbuffer );
@@ -175,17 +171,17 @@ boolean Plugin_009(byte function, char *string) {
       }
       Serial.println();
       // ----------------------------------
-      RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
+      RawSignal.Repeats=true;                       // suppress repeats of the same RF packet         
       RawSignal.Number=0; 
-      success=true;
-    #endif //PLUGIN_CORE_009
-    return success;
+      return true;
 }
+#endif //PLUGIN_009
+
+#ifdef PLUGIN_TX_009
+void X10_Send(uint32_t address);
 
 boolean PluginTX_009(byte function, char *string) {
-  boolean success=false;
-      
-        #ifdef PLUGIN_TX_009_CORE
+        boolean success=false;
         //10;X10;000041;1;OFF;
         //0123456789012345678
         // Hier aangekomen bevat string het volledige commando. Test als eerste of het opgegeven commando overeen komt
@@ -293,14 +289,12 @@ boolean PluginTX_009(byte function, char *string) {
            newadd=newadd+bitstream;
            bitstream=newadd;
            // -----------------------------
-           success=true;
            X10_Send(bitstream);                        // full bitstream to send
+           success=true;
         }
-    #endif //PLUGIN_CORE_009
     return success;
 }
 
-#ifdef PLUGIN_TX_009_CORE
 void X10_Send(uint32_t address) {
     int fpulse  = 375;                              // Pulse witdh in microseconds
     int fretrans = 4;                               // Number of code retransmissions
@@ -350,4 +344,4 @@ void X10_Send(uint32_t address) {
     RFLinkHW();
     return;
 }
-#endif //PLUGIN_CORE_009
+#endif //PLUGIN_TX_009

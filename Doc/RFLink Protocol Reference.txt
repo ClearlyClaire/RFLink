@@ -30,12 +30,16 @@ Packet structure - Send data via RF:
 10;Byron;1234;01            => protocol;address;ringtone;
 10;Blyss;ff98;A1;OFF;       => protocol;address;button;action (ON/OFF/ALLON/ALLOFF)
 
+
 Control Commands - Send:
 --------------------------
 10;REBOOT;      => Reboot RFLink hardware
 10;PING;        => Is replied with: 20;99;PONG;
-10;VERSION;     => Is replied with: 20;99;"RFLink software version";
-10;RFDEBUG=ON;  => ON/OFF to Enable/Disable showing of RF packet. Is replied with: 20;99;RFDEBUG="state"; 
+10;VERSION;     => Is replied with: 20;99;"RFLink software version";   
+10;RFDEBUG=ON;  => ON/OFF to Enable/Disable showing of RF packets. Is replied with: 20;99;RFDEBUG="state"; 
+10;RFUDEBUG=ON; => ON/OFF to Enable/Disable showing of undecoded RF packets. Is replied with: 20;99;RFUDEBUG="state"; 
+10;QRFDEBUG=ON; => ON/OFF to Enable/Disable showing of undecoded RF packets. Is replied with: 20;99;QRFDEBUG="state"; 
+                   QRFDEBUG is a faster version of RFUDEBUG but all pulse times are shown in hexadecimal and need to be multiplied by 25
 
 
 Data Fields:  (LABEL=data)
@@ -61,6 +65,7 @@ WINTMP=1234     => Wind meter temperature reading (hexadecimal)
 CHIME=123       => Chime/Doorbell melody number
 SMOKEALERT=ON   => ON/OFF
 PIR=ON          => ON/OFF
+
 
 Sample data:
 ------------

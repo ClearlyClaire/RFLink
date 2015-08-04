@@ -20,71 +20,37 @@
  * 0111 00011011 00011111 000 0
  * AAAA AAAAAAAA AAAAAAAA BBB C
  * 
- * A = ID (20 bits) Note: addresses with the highest 4 bits all set are not accepted for now.                  
+ * A = ID (20 bits) 
  * B = UnitCode (3 bits)
  * C = switch code (ON/OFF) (1 bit)
  *
- * 07FFFF 19 bits max ?
  * 20;2A;DEBUG;Pulses=50;Pulses(uSec)= 900,200,825,200,225,825,200,825,800,200,200,825,200,825,825,200,225,825,800,200,800,225,225,825,800,225,200,825,225,825,800,225,225,825,800,225,200,825,200,825,225,825,225,825,225,825,800,200,200;
  * 20;9D;DEBUG;Pulses=50;Pulses(uSec)=1250,200,750,175,200,750,200,750,750,200,200,750,200,750,750,200,200,750,750,200,750,200,200,750,750,200,200,750,200,750,750,200,200,750,750,200,200,750,200,750,750,200,750,200,750,200,750,200,200;
- * 1010010110010110011010011001011001100101101010100
- * 00110110100101101011 000 0
- * 01110001101100011111 000 0
- 
-   010101011001010101100101101001100110010110101010
-   111101111011001010110000  <<   F7B2B 0
-   000010000100110101001111  
-  20;03;DEBUG;Pulses=50;Pulses(uSec)=
-  275,800,
-  200,800,
-  200,800,
-  175,800,
-  775,225,
-  175,800,
-  200,800,
-  200,800,
-  200,800,
-  775,225,
-  175,800,
-  175,800,
-  775,225,
-  775,225,
-  200,800,
-  775,225,
-  200,800,
-  775,225,
-  200,800,
-  200,800,
-  775,225,
-  775,225,
-  775,225,
-  775,225,
-  175;
  \*********************************************************************************************/
 #define EURODOMEST_PulseLength    50
 
-void Eurodomest_Send(unsigned long address);
+#define EURODOMEST_PULSEMID  400/RAWSIGNAL_SAMPLE_RATE
+#define EURODOMEST_PULSEMIN  100/RAWSIGNAL_SAMPLE_RATE
+#define EURODOMEST_PULSEMAX  900/RAWSIGNAL_SAMPLE_RATE
 
+#ifdef PLUGIN_005
 boolean Plugin_005(byte function, char *string) {
-    boolean success=false;
-    unsigned long bitstream=0;
-  
-    #ifdef PLUGIN_005_CORE
+      if (RawSignal.Number != EURODOMEST_PulseLength) return false; 
+      unsigned long bitstream=0;
       byte unitcode=0;
       byte command=0;
       unsigned long address=0;
       // ==========================================================================
-      if (RawSignal.Number != EURODOMEST_PulseLength) return false; 
-      if(RawSignal.Pulses[49]*RawSignal.Multiply > 400) return false;  // last pulse (stop bit) needs to be short, otherwise no Eurodomest protocol
+      if(RawSignal.Pulses[49] > EURODOMEST_PULSEMID) return false;  // last pulse (stop bit) needs to be short, otherwise no Eurodomest protocol
       // get all 24 bits
       for(int x=2;x < EURODOMEST_PulseLength;x+=2) {
-         if(RawSignal.Pulses[x]*RawSignal.Multiply > 400) { // long pulse
-             if (RawSignal.Pulses[x-1]*RawSignal.Multiply > 400) return false; // not a 01 or 10 transmission 
-             if(RawSignal.Pulses[x]*RawSignal.Multiply > 900) return false; // make sure the long pulse is within range
+         if(RawSignal.Pulses[x] > EURODOMEST_PULSEMID) { // long pulse
+             if (RawSignal.Pulses[x-1] > EURODOMEST_PULSEMID) return false; // not a 01 or 10 transmission 
+             if(RawSignal.Pulses[x] > EURODOMEST_PULSEMAX) return false; // make sure the long pulse is within range
              bitstream = (bitstream << 1) | 0x1; 
          } else { // short pulse
-             if (RawSignal.Pulses[x]*RawSignal.Multiply < 100) return false;   // pulse too short to be Eurodomest
-             if (RawSignal.Pulses[x-1]*RawSignal.Multiply < 400) return false; // not a 01 or 10 transmission 
+             if (RawSignal.Pulses[x] < EURODOMEST_PULSEMIN) return false;   // pulse too short to be Eurodomest
+             if (RawSignal.Pulses[x-1] < EURODOMEST_PULSEMID) return false; // not a 01 or 10 transmission 
              bitstream = (bitstream << 1);
          }
       }
@@ -103,7 +69,6 @@ boolean Plugin_005(byte function, char *string) {
       //==================================================================================
       address=bitstream;
       address=(address >> 4) &0xfffff;
-      //if ( (address ) & 0xf0000 == 0xf0000) return false;   // Addresses with the highest 4 bits all set are not accepted 
       if (address==0) return false;                 // Address would never be 0 
       if (address==0xfffff) return false;           // Address would never be FFFFF
       // ----------------------------------
@@ -143,16 +108,17 @@ boolean Plugin_005(byte function, char *string) {
       // ----------------------------------
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
       RawSignal.Number=0;
-      success=true;
-    #endif //PLUGIN_CORE_005
-    return success;
+      return true;
 }
+#endif //PLUGIN_005
       
+#ifdef PLUGIN_TX_005
+void Eurodomest_Send(unsigned long address);
+
 boolean PluginTX_005(byte function, char *string) {
-    //10;EURODOMEST;03696b;0;ON;
-    //012345678901234567890123456
-    boolean success=false;
-    #ifdef PLUGIN_TX_005_CORE
+        //10;EURODOMEST;03696b;0;ON;
+        //012345678901234567890123456
+        boolean success=false;
         if (strncasecmp(InputBuffer_Serial+3,"EURODOMEST;",11) == 0) { // KAKU Command eg. 
            unsigned long bitstream=0L;
            if (InputBuffer_Serial[20] != ';') return success;
@@ -181,10 +147,8 @@ boolean PluginTX_005(byte function, char *string) {
            Eurodomest_Send(bitstream);              // the full bitstream to send
            success=true;
         }
-    #endif //PLUGIN_CORE_005
-    return success;
+        return success;
 }
-
           
 void Eurodomest_Send(unsigned long address) { 
     int fpulse = 296;                               // Pulse witdh in microseconds
@@ -227,3 +191,4 @@ void Eurodomest_Send(unsigned long address) {
     digitalWrite(PIN_RF_RX_VCC,HIGH);               // Turn the 433Mhz receiver on
     RFLinkHW();
 }
+#endif //PLUGIN_TX_005

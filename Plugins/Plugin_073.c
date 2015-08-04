@@ -32,27 +32,22 @@
 #define DELTRONIC_PULSECOUNT 26
 #define LENGTH_DEVIATION 300
 
-void Deltronic_Send(unsigned long address);
-
+#ifdef PLUGIN_073
 boolean Plugin_073(byte function, char *string) {
-  boolean success = false;
-
-#ifdef PLUGIN_073_CORE
+      if (RawSignal.Number != DELTRONIC_PULSECOUNT) return false;
       //==================================================================================
-	  //unsigned long bitmask = 0x00000800L;
       unsigned long bitstream = 0L;                     
       unsigned long checksum = 0L;
       //==================================================================================
-      if (RawSignal.Number != DELTRONIC_PULSECOUNT) return false;
-      if (RawSignal.Pulses[1]*RawSignal.Multiply > 675) return false;    // First pulse is start bit and should be short!
+      if (RawSignal.Pulses[1]*RAWSIGNAL_SAMPLE_RATE > 675) return false;    // First pulse is start bit and should be short!
       for(byte x=2;x < DELTRONIC_PULSECOUNT;x=x+2) {
-          if (RawSignal.Pulses[x]*RawSignal.Multiply > 800) {            // long pulse  (800-1275)
-             if (RawSignal.Pulses[x]*RawSignal.Multiply > 1275) return false; // pulse too long to be valid
-             if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 675) return false; // invalid manchestercode (10 01)
+          if (RawSignal.Pulses[x]*RAWSIGNAL_SAMPLE_RATE > 800) {            // long pulse  (800-1275)
+             if (RawSignal.Pulses[x]*RAWSIGNAL_SAMPLE_RATE > 1275) return false; // pulse too long to be valid
+             if (RawSignal.Pulses[x+1]*RAWSIGNAL_SAMPLE_RATE > 675) return false; // invalid manchestercode (10 01)
              bitstream = (bitstream << 1) | 0x1;                         // 10 => 1 bit
           } else { // short pulse
-             if (RawSignal.Pulses[x]*RawSignal.Multiply < 250) return false;  // too short
-             if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 700) return false; // invalid manchestercode (10 01)
+             if (RawSignal.Pulses[x]*RAWSIGNAL_SAMPLE_RATE < 250) return false;  // too short
+             if (RawSignal.Pulses[x+1]*RAWSIGNAL_SAMPLE_RATE < 700) return false; // invalid manchestercode (10 01)
              bitstream = bitstream << 1;                                 // 01 => 0 bit
           }
       }      
@@ -77,10 +72,10 @@ boolean Plugin_073(byte function, char *string) {
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( pbuffer );
+      Serial.print("20;");
+      PrintHexByte(PKSequenceNumber++);
+      Serial.print(F(";Deltronic;"));              // Label
       // ----------------------------------
-      Serial.print(F("Deltronic;"));               // Label
       sprintf(pbuffer, "ID=%04x;",(bitstream) & 0x0000000FL); // ID    
       Serial.print( pbuffer );
       Serial.print(F("SWITCH=1;CMD=ON;"));  
@@ -89,15 +84,16 @@ boolean Plugin_073(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                       // suppress repeats of the same RF packet         
       RawSignal.Number=0;                           // do not process the packet any further
-      success = true;                               // processing successful
-#endif // PLUGIN_073_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_073
+
+#ifdef PLUGIN_TX_073
+void Deltronic_Send(unsigned long address);
 
 boolean PluginTX_073(byte function, char *string) {
-  boolean success=false;
-  unsigned long bitstream=0L;
-  #ifdef PLUGIN_TX_073_CORE
+        boolean success=false;
+        unsigned long bitstream=0L;
         //10;DELTRONIC;001c33;1;OFF;
         //012345678901234567890123456
         if (strncasecmp(InputBuffer_Serial+3,"DELTRONIC;",10) == 0) { 
@@ -107,13 +103,11 @@ boolean PluginTX_073(byte function, char *string) {
            bitstream=str2int(InputBuffer_Serial+11); 
            bitstream = (bitstream) | 0x00000FF0L;
            Deltronic_Send(bitstream);               // Send RF packet
-           success=true;                            
+           success=true;        
         }
-  #endif // PLUGIN_073_CORE
-  return success;
+        return success;
 }
        
-#ifdef PLUGIN_TX_073_CORE
 void Deltronic_Send(unsigned long address) {
 	byte repeatTimes = 16;
 	byte repeat, index;
@@ -169,4 +163,4 @@ void Deltronic_Send(unsigned long address) {
     digitalWrite(PIN_RF_RX_VCC,HIGH);               // Enable the 433Mhz receiver
     RFLinkHW();
 }
-#endif // PLUGIN_073_CORE
+#endif // PLUGIN_TX_073

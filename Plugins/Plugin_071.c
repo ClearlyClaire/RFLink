@@ -34,25 +34,24 @@
  * 20;2E;Plieger York;ID=aaaa;SWITCH=1;CMD=ON;CHIME=02;
  \*********************************************************************************************/
 #define PLIEGER_PULSECOUNT 66
+#define PLIEGER_PULSEMID  700/RAWSIGNAL_SAMPLE_RATE
+#define PLIEGER_PULSEMAX  1900/RAWSIGNAL_SAMPLE_RATE
 
+#ifdef PLUGIN_071
 boolean Plugin_071(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_071_CORE
       if (RawSignal.Number != PLIEGER_PULSECOUNT) return false;
-
       unsigned long bitstream=0L;  
       unsigned int id=0;
       byte chime=0;
       //==================================================================================
       // get all 32 bits
       for(byte x=1;x <=PLIEGER_PULSECOUNT-2;x+=2) {
-         if(RawSignal.Pulses[x]*RawSignal.Multiply > 700) {
-           if (RawSignal.Pulses[x]*RawSignal.Multiply > 1900) return false;
-           if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 700) return false;  // Valid Manchester check
+         if(RawSignal.Pulses[x] > PLIEGER_PULSEMID) {
+           if (RawSignal.Pulses[x] > PLIEGER_PULSEMAX) return false;
+           if (RawSignal.Pulses[x+1] > PLIEGER_PULSEMID) return false;  // Valid Manchester check
            bitstream = (bitstream << 1) | 0x1; 
          } else {
-           if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 700) return false;  // Valid Manchester check
+           if (RawSignal.Pulses[x+1] < PLIEGER_PULSEMID) return false;  // Valid Manchester check
            bitstream = (bitstream << 1);
          }
       }
@@ -78,10 +77,10 @@ boolean Plugin_071(byte function, char *string) {
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++); // Node and packet number 
-      Serial.print( pbuffer );
+      Serial.print("20;");
+      PrintHexByte(PKSequenceNumber++);
+      Serial.print(F(";Plieger York;"));                   // Label
       // ----------------------------------
-      Serial.print(F("Plieger York;"));                   // Label
       sprintf(pbuffer, "ID=%04x;", id);                 // ID      
       Serial.print( pbuffer );
       Serial.print("SWITCH=1;CMD=ON;");  
@@ -91,7 +90,6 @@ boolean Plugin_071(byte function, char *string) {
       //==================================================================================
       RawSignal.Repeats=true;                          // suppress repeats of the same RF packet
       RawSignal.Number=0;                              // do not process the packet any further
-      success = true;                                  // processing successful
-#endif // PLUGIN_071_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_071

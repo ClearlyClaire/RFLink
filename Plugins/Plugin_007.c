@@ -36,13 +36,10 @@
  350,1200,350,1200,350;
  \*********************************************************************************************/
 #define CONRADRSL2_PULSECOUNT 66
+#define CONRADRSL2_PULSEMID  600/RAWSIGNAL_SAMPLE_RATE
 
-void RSL2_Send(unsigned long address);
-
+#ifdef PLUGIN_007
 boolean Plugin_007(byte function, char *string){
-  boolean success=false;
-
-#ifdef PLUGIN_007_CORE
       if (RawSignal.Number != CONRADRSL2_PULSECOUNT) return false;
       unsigned long bitstream=0L;
       byte checksum=0;
@@ -52,12 +49,12 @@ boolean Plugin_007(byte function, char *string){
       //==================================================================================
       // get bits
       for(byte x=1;x < CONRADRSL2_PULSECOUNT-2;x=x+2) {
-         if (RawSignal.Pulses[x]*RawSignal.Multiply > 600) {
-            if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 600) return false;  // manchester check 
-            bitstream = (bitstream << 1) | 0x1;     // 
+         if (RawSignal.Pulses[x] > CONRADRSL2_PULSEMID) {
+            if (RawSignal.Pulses[x+1] > CONRADRSL2_PULSEMID) return false;  // manchester check 
+            bitstream = (bitstream << 1) | 0x1;     // 1
          } else {
-            if (RawSignal.Pulses[x+1]*RawSignal.Multiply < 600) return false;  // manchester check 
-            bitstream = (bitstream << 1);           // 
+            if (RawSignal.Pulses[x+1] < CONRADRSL2_PULSEMID) return false;  // manchester check 
+            bitstream = (bitstream << 1);           // 0
          }
       }
       //==================================================================================
@@ -159,14 +156,15 @@ boolean Plugin_007(byte function, char *string){
       //==================================================================================
       RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
       RawSignal.Number=0;
-      success=true;
-#endif // PLUGIN_007_CORE
-  return success;
+      return true;
 }
+#endif // PLUGIN_007
+
+#ifdef PLUGIN_TX_007
+void RSL2_Send(unsigned long address);
 
 boolean PluginTX_007(byte function, char *string) {
       boolean success=false;
-#ifdef PLUGIN_TX_007_CORE
       //10;CONRAD;000fa0;0;OFF;
       //10;CONRAD;009200;1;ON;
       //10;CONRAD;ff0607;1;OFF;
@@ -231,11 +229,9 @@ boolean PluginTX_007(byte function, char *string) {
          RSL2_Send(bitstream);                    // the full bitstream to send
          success=true;
       }
-#endif // PLUGIN_007_CORE
       return success;
 }
 
-#ifdef PLUGIN_TX_007_CORE
 void RSL2_Send(unsigned long address) { 
     int fpulse  = 650;                                 // Pulse witdh in microseconds 650? 
     int fpulse2 = 450;                                 // Pulse witdh in microseconds 650? 
@@ -284,4 +280,4 @@ void RSL2_Send(unsigned long address) {
     digitalWrite(PIN_RF_RX_VCC,HIGH);                  // Spanning naar de RF ontvanger weer aan.
     RFLinkHW();
 }
-#endif // PLUGIN_007_CORE
+#endif // PLUGIN_TX_007

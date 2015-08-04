@@ -53,13 +53,11 @@
 #define ACH2010_MIN_PULSECOUNT 160 // reduce this value (144?) in case of bad reception
 #define ACH2010_MAX_PULSECOUNT 160
 
+#ifdef PLUGIN_100
+
 uint8_t Plugin_100_ProtocolAlectoCRC8( uint8_t *addr, uint8_t len);
 
-
 boolean Plugin_100(byte function, char *string) {
-  boolean success=false;
-
-#ifdef PLUGIN_100_CORE
       if (!(((RawSignal.Number >= ACH2010_MIN_PULSECOUNT) && (RawSignal.Number <= ACH2010_MAX_PULSECOUNT)) || ((RawSignal.Number >= DKW2012_MIN_PULSECOUNT) && (RawSignal.Number <= DKW2012_MAX_PULSECOUNT)))) return false;
 
       byte c=0;
@@ -75,7 +73,7 @@ boolean Plugin_100(byte function, char *string) {
       // Get message back to front as the header is almost never received complete for ACH2010
       byte idx = maxidx;
       for(byte x=RawSignal.Number; x>0; x=x-2) {
-          if(RawSignal.Pulses[x-1]*RawSignal.Multiply < 0x300) rfbit = 0x80; else rfbit = 0;  
+          if(RawSignal.Pulses[x-1]*RAWSIGNAL_SAMPLE_RATE < 0x300) rfbit = 0x80; else rfbit = 0;  
           data[idx] = (data[idx] >> 1) | rfbit;
           c++;
           if (c == 8) {
@@ -108,7 +106,9 @@ boolean Plugin_100(byte function, char *string) {
       wgust = data[5] * 108;
       wgust = wgust / 10;
       rain = (data[6] * 256) + data[7];
-      if (RawSignal.Number >= DKW2012_MIN_PULSECOUNT) wdir = (data[8] & 0xf);
+      if (RawSignal.Number >= DKW2012_MIN_PULSECOUNT) {
+         wdir = (data[8] & 0xf);
+      }
       // ----------------------------------
       // Output
       // ----------------------------------
@@ -133,27 +133,23 @@ boolean Plugin_100(byte function, char *string) {
       sprintf(pbuffer, "RAIN=%04x;", rain);     
       Serial.print( pbuffer );
       if (RawSignal.Number >= DKW2012_MIN_PULSECOUNT) {
-         sprintf(pbuffer, "WDIR=%04x;", wdir);     
+         sprintf(pbuffer, "WINDIR=%04d;", wdir);     
          Serial.print( pbuffer );
       }
       Serial.println();     
       // ----------------------------------
       RawSignal.Repeats=true;                          // suppress repeats of the same RF packet
       RawSignal.Number=0;                              // do not process the packet any further
-      success = true;                                  // processing successful
-#endif // PLUGIN_100_CORE
-  return success;
+      return true;
 }
 
-#ifdef PLUGIN_100_CORE
 /*********************************************************************************************\
  * Calculates CRC-8 checksum
  * reference http://lucsmall.com/2012/04/29/weather-station-hacking-part-2/
  *           http://lucsmall.com/2012/04/30/weather-station-hacking-part-3/
  *           https://github.com/lucsmall/WH2-Weather-Sensor-Library-for-Arduino/blob/master/WeatherSensorWH2.cpp
  \*********************************************************************************************/
-uint8_t Plugin_100_ProtocolAlectoCRC8( uint8_t *addr, uint8_t len)
-{
+uint8_t Plugin_100_ProtocolAlectoCRC8( uint8_t *addr, uint8_t len) {
   uint8_t crc = 0;
   // Indicated changes are from reference CRC-8 function in OneWire library
   while (len--) {
@@ -167,4 +163,4 @@ uint8_t Plugin_100_ProtocolAlectoCRC8( uint8_t *addr, uint8_t len)
   }
   return crc;
 }
-#endif // PLUGIN_100_CORE
+#endif // PLUGIN_100

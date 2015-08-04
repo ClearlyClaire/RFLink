@@ -22,7 +22,7 @@
  *   00110110 1000 1011 0111 0000 00011100 0110
  *   RC       Type Temperature___ Humidity Checksum
  *   A = Rolling Code (includes channel number on low 2 bits of nibble1 (10=ch1 01=ch2 11=ch3) )
- *   B = Message type (xyyx = temp/humidity if yy <> '11')
+ *   B = Message type (xyyx = temp/humidity if yy <> '11') => only accepting yy = 00 for temperatures
  *       4 bits: bit 0   = battery state 0=OK, 1= below 2.6 volt       
  *               bit 1&2 = 00/01/10 = temp/hum is transmitted, 11=non temp is transmitted 
  *               bit 3   = 0=scheduled transmission, 1=requested transmission (button press)
@@ -64,7 +64,7 @@
  *   A = Rolling Code
  *   B = Message type (xyyx = NON temp/humidity data if yy = '11')
  *   C = Fixed to 111x
- *   D = Wind direction
+ *   D = Wind direction 0-511 in 0.7 degree steps?
  *   E = Windgust (bitvalue * 0.2 m/s, correction for webapp = 3600/1000 * 0.2 * 100 = 72)
  *   F = Checksum
  *
@@ -73,11 +73,8 @@
  \*********************************************************************************************/
 #define WS3500_PULSECOUNT 74
 
-boolean Plugin_030(byte function, char *string)
-{
-  boolean success=false;
-
-#ifdef PLUGIN_030_CORE
+#ifdef PLUGIN_030
+boolean Plugin_030(byte function, char *string) {
       if (RawSignal.Number != WS3500_PULSECOUNT) return false;
       unsigned long bitstream=0L;
       byte nibble0=0;
@@ -115,11 +112,12 @@ boolean Plugin_030(byte function, char *string)
          }
       }
       //==================================================================================
+      if (bitstream == 0) return false;          // Perform a sanity check
+      //==================================================================================
       // Prevent repeating signals from showing up
       //==================================================================================
-      if( (SignalHash!=SignalHashPrevious) || (RepeatingTimer+1000<millis() && SignalCRC != bitstream) || (SignalCRC != bitstream) ) { 
+      if( (SignalHash!=SignalHashPrevious) || ((RepeatingTimer+1000<millis()) && (SignalCRC != bitstream)) || (SignalCRC != bitstream) ) { 
          // not seen the RF packet recently
-         if (bitstream == 0) return false;          // Perform a sanity check
          SignalCRC=bitstream;
       } else {
          // already seen the RF packet recently
@@ -138,6 +136,7 @@ boolean Plugin_030(byte function, char *string)
       //==================================================================================
       // Perform checksum calculations, Alecto checksums are Rollover Checksums by design!
       if ((nibble2 & 0x6) != 6) { // temperature packet
+         if ((nibble2 & 0x6) != 0) return false;        // reject alecto v4 on alecto v1... (causing high negative temperatures with valid checksums)
          checksumcalc = (0xf - nibble0 - nibble1 - nibble2 - nibble3 - nibble4 - nibble5 - nibble6 - nibble7) & 0xf;
       } else {
          if ((nibble3 & 0x7) == 3) { // Rain packet
@@ -233,7 +232,8 @@ boolean Plugin_030(byte function, char *string)
             return true;
          }
          if ((nibble3) == 7) { // winddir packet
-            winddirection = ((bitstream >> 15) & 0x1ff) / 45;
+            winddirection = ((bitstream >> 15) & 0x1ff) / 45; // ???
+            winddirection = winddirection & 0x0f; 
             windgust = ((bitstream >> 24) & 0xff);
             windgust = windgust*72;
             //==================================================================================
@@ -245,7 +245,7 @@ boolean Plugin_030(byte function, char *string)
             Serial.print(F("Alecto V1;"));             // Label
             sprintf(pbuffer, "ID=00%02x;", rc);         // ID    
             Serial.print( pbuffer );
-            sprintf(pbuffer, "WINDIR=%04x;", winddirection);     
+            sprintf(pbuffer, "WINDIR=%04d;", winddirection);     
             Serial.print( pbuffer );
             sprintf(pbuffer, "WINGS=%04x;", windgust);     
             Serial.print( pbuffer );
@@ -256,7 +256,6 @@ boolean Plugin_030(byte function, char *string)
             return true;
          }
       }
-      success = true;
-#endif // PLUGIN_030_CORE
-  return success;
+      return false;
 }
+#endif // PLUGIN_030
