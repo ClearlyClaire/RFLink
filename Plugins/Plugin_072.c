@@ -130,7 +130,7 @@ boolean PluginTX_072(byte function, char *string) {
           RawSignal.Pulses[26]=BYRONSPACE/RawSignal.Multiply;
           RawSignal.Number=26;
           RawSendRF();
-          RawSignal.Multiply=25;
+          RawSignal.Multiply=RAWSIGNAL_SAMPLE_RATE;
           success=true;        
           //-----------------------------------------------
        }

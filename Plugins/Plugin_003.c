@@ -391,7 +391,7 @@ void Kaku_Send(unsigned long bitstream, byte command) {
         RawSignal.Pulses[4*KAKU_CodeLength+2]=KAKU_T/RawSignal.Multiply;
     }
     RawSendRF();
-    RawSignal.Multiply=25;
+    RawSignal.Multiply=RAWSIGNAL_SAMPLE_RATE; 
 }
 
 void Sartano_Send(unsigned long address) { 

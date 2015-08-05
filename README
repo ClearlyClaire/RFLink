@@ -1,3 +1,9 @@
+R27: 
+- Added: OSV1 battery status 
+- Fixed: OSV1 boundaries and removed some debug info 
+- Fixed: Some plugins set an incorrect sampling rate divider value 
+- Changed: AlectoV1 false positives filter was too agressive
+===
 R26:
 - Added: QRFDEBUG command to do faster logging of undecoded data
 - Added: VERSION command

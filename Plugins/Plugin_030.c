@@ -22,7 +22,7 @@
  *   00110110 1000 1011 0111 0000 00011100 0110
  *   RC       Type Temperature___ Humidity Checksum
  *   A = Rolling Code (includes channel number on low 2 bits of nibble1 (10=ch1 01=ch2 11=ch3) )
- *   B = Message type (xyyx = temp/humidity if yy <> '11') => only accepting yy = 00 for temperatures
+ *   B = Message type (xyyx = temp/humidity if yy <> '11') => only accepting yy = 00 for negative temperatures for now
  *       4 bits: bit 0   = battery state 0=OK, 1= below 2.6 volt       
  *               bit 1&2 = 00/01/10 = temp/hum is transmitted, 11=non temp is transmitted 
  *               bit 3   = 0=scheduled transmission, 1=requested transmission (button press)
@@ -136,7 +136,6 @@ boolean Plugin_030(byte function, char *string) {
       //==================================================================================
       // Perform checksum calculations, Alecto checksums are Rollover Checksums by design!
       if ((nibble2 & 0x6) != 6) { // temperature packet
-         if ((nibble2 & 0x6) != 0) return false;        // reject alecto v4 on alecto v1... (causing high negative temperatures with valid checksums)
          checksumcalc = (0xf - nibble0 - nibble1 - nibble2 - nibble3 - nibble4 - nibble5 - nibble6 - nibble7) & 0xf;
       } else {
          if ((nibble3 & 0x7) == 3) { // Rain packet
@@ -158,6 +157,7 @@ boolean Plugin_030(byte function, char *string) {
          temperature = (bitstream >> 12) & 0xfff;
          //fix 12 bit signed number conversion
          if ((temperature & 0x800) == 0x800) {
+            if ((nibble2 & 0x6) != 0) return false;       // reject alecto v4 on alecto v1... (causing high negative temperatures with valid checksums)
             temperature=4096-temperature;                 // fix for minus temperatures
             if (temperature > 0x258) return false;        // temperature out of range ( > -60.0 degrees) 
             temperature=temperature | 0x8000;             // turn highest bit on for minus values

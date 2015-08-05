@@ -215,7 +215,7 @@ boolean PluginTX_015(byte function, char *string) {
            RawSignal.Repeats=5;                     // vijf herhalingen.
            RawSignal.Delay=20;                      // Tussen iedere pulsenreeks enige tijd rust.
            RawSendRF();
-           RawSignal.Multiply=25;
+           RawSignal.Multiply=RAWSIGNAL_SAMPLE_RATE;
            //-----------------------------------------------
            success=true;
         }

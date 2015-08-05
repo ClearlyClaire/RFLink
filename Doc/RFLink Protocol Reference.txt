@@ -65,6 +65,8 @@ WINTMP=1234     => Wind meter temperature reading (hexadecimal)
 CHIME=123       => Chime/Doorbell melody number
 SMOKEALERT=ON   => ON/OFF
 PIR=ON          => ON/OFF
+CO2=1234        => CO2 air quality
+SOUND=1234      => Noise level
 
 
 Sample data:

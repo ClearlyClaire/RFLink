@@ -98,7 +98,7 @@ boolean PluginTX_080(byte function, char *string) {
          RawSignal.Pulses[52]=0;
          RawSignal.Number=52;
          RawSendRF();
-         RawSignal.Multiply=25;                     // restore setting
+         RawSignal.Multiply=RAWSIGNAL_SAMPLE_RATE;  // restore setting
          success=true;        
       }        
       return success;

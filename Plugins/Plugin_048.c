@@ -225,14 +225,13 @@ class OregonDecoderV1 : public DecodeOOK {
 						break;
 					case T2:
 						// Last sync pulse, determines the first bit!
-						// XXX: Not completely sure about the order or
-						// timings, mine is always around 4700
-						if (width >= 4600) {
+						if (width <= 5900) {
 							state = T0;
 							flip = 1;
 						} else {
 							state = OK;
 							flip = 0;
+                            manchester(0);
 						}
 					break;
 				}
@@ -511,8 +510,11 @@ boolean Plugin_048(byte function, char *string) {
         // ----------------------------------
         sprintf(pbuffer, ";TEMP=%04x;", temp);     
         Serial.print( pbuffer );
-        Serial.println();
-        PrintHex8(osdata,4);                      // rolling code + channel
+        if (osdata[2] & 0x80) {
+           Serial.print(F("BAT=LOW;"));
+        } else {
+           Serial.print(F("BAT=OK;"));
+        }
         Serial.println();
       } 
       // ==================================================================================

@@ -1,4 +1,4 @@
-#define BUILDNR                          006                                    // shown in version
+#define BUILDNR                          000                                    // shown in version
 #define MIN_RAW_PULSES                    20                                    // =8 bits. Minimal number of bits*2 that need to have been received before we spend CPU time on decoding the signal.
 #define RAWSIGNAL_SAMPLE_RATE             30                                    // Sample width / resolution in uSec for raw RF pulses.
 #define MIN_PULSE_LENGTH                  40                                    // Pulses shorter than this value in uSec. will be seen as garbage and not taken as actual pulses.
@@ -175,7 +175,7 @@ void loop() {
                      Serial.println(InputBuffer_Serial); 
                   } else                 
                   if (strncasecmp(InputBuffer_Serial+3,"VERSION",7) == 0) {
-                      sprintf(InputBuffer_Serial,"20;%02X;VER=1.1;REV=26;BUILD=%03d;",PKSequenceNumber++,BUILDNR);
+                      sprintf(InputBuffer_Serial,"20;%02X;VER=1.1;REV=27;BUILD=%03d;",PKSequenceNumber++,BUILDNR);
                       Serial.println(InputBuffer_Serial); 
                   } else {
                      // -------------------------------------------------------
