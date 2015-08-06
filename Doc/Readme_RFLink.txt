@@ -1,3 +1,6 @@
+R28: 
+- Fixed: FA20RF smoke detector transmit from Domoticz 
+===
 R27: 
 - Added: OSV1 battery status 
 - Fixed: OSV1 boundaries and removed some debug info 

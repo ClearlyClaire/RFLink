@@ -175,7 +175,7 @@ void loop() {
                      Serial.println(InputBuffer_Serial); 
                   } else                 
                   if (strncasecmp(InputBuffer_Serial+3,"VERSION",7) == 0) {
-                      sprintf(InputBuffer_Serial,"20;%02X;VER=1.1;REV=27;BUILD=%03d;",PKSequenceNumber++,BUILDNR);
+                      sprintf(InputBuffer_Serial,"20;%02X;VER=1.1;REV=28;BUILD=%03d;",PKSequenceNumber++,BUILDNR);
                       Serial.println(InputBuffer_Serial); 
                   } else {
                      // -------------------------------------------------------

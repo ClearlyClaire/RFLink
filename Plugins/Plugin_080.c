@@ -68,15 +68,17 @@ boolean Plugin_080(byte function, char *string) {
 #ifdef PLUGIN_TX_080
 boolean PluginTX_080(byte function, char *string) {
       boolean success=false;
-      //10;SmokeAlert;123456;ON;
+      //10;FA20RF;67f570;1;ON;
       //012345678901234567890
       unsigned long bitstream=0;
-      if (strncasecmp(InputBuffer_Serial+3,"SmokeAlert;",11) == 0) { // KAKU Command eg. 
-         if (InputBuffer_Serial[20] != ';') return false;
-         InputBuffer_Serial[12]=0x30;
-         InputBuffer_Serial[13]=0x78;
-         InputBuffer_Serial[20]=0;
-         bitstream=str2int(InputBuffer_Serial+12); 
+      if (strncasecmp(InputBuffer_Serial+3,"FA20RF;",7) == 0) { // KAKU Command eg. 
+         if (InputBuffer_Serial[18] != ';') return false;
+         InputBuffer_Serial[8]=0x30;
+         InputBuffer_Serial[9]=0x78;
+         InputBuffer_Serial[16]=0;
+         bitstream=str2int(InputBuffer_Serial+8); 
+         byte cmd=str2cmd(InputBuffer_Serial+19);   // ON/OFF 
+         if (cmd!=VALUE_ON) return true;            // pretend command was ok but we dont have to send anything..
          // ---------- SMOKEALERT SEND -----------
          RawSignal.Multiply=50;
          RawSignal.Repeats=10;

@@ -52,14 +52,15 @@ HUM=99          => Humidity (hexadecimal)
 BARO=9999       => Barometric pressure (hexadecimal) 
 HSTATUS=99      => 0=Normal, 1=Comfortable, 2=Dry, 3=Wet
 BFORECAST=99    => 0=No Info/Unknown, 1=Sunny, 2=Partly Cloudy, 3=Cloudy, 4=Rain
-UV=9999         => Light intensity (hexadecimal)
+UV=9999         => UV intensity (hexadecimal)
+LUX=9999        => Light intensity (hexadecimal)
 BAT=OK          => Battery status indicator (OK/LOW)
 RAIN=1234       => rain rate in mm. (hexadecimal) 
 RAINTOT=1234    => total rain in mm. (hexadecimal)
 WINSP=9999      => Wind speed in km. p/h (hexadecimal) needs devision by 10 
 AWINSP=9999     => Average Wind speed in km. p/h (hexadecimal) needs devision by 10 
 WINGS=9999      => Wind Gust in km. p/h (hexadecimal)
-WINDIR=123      => Wind direction (0-360 degrees) (decimal)
+WINDIR=123      => Wind direction 0-15 reflecting 0-360 degrees in 22.5 degree steps (decimal)
 WINCHL          => wind chill (hexadecimal)
 WINTMP=1234     => Wind meter temperature reading (hexadecimal)
 CHIME=123       => Chime/Doorbell melody number
@@ -67,7 +68,12 @@ SMOKEALERT=ON   => ON/OFF
 PIR=ON          => ON/OFF
 CO2=1234        => CO2 air quality
 SOUND=1234      => Noise level
-
+KWATT=1234      => KWatt
+WATT=1234       => Watt
+DIST=1234       => Distance
+METER=1234      => Water flow meter
+VOLT=1234       => Voltage
+CURRENT=1234    => Current
 
 Sample data:
 ------------
