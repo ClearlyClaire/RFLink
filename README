@@ -1,3 +1,7 @@
+R29: 
+- Fixed: AC/NewKaku high unit numbers were incorrect. 
+         If you already have devices with high unit numbers in Domoticz, just throw them away and let them be recognized again
+===
 R28: 
 - Fixed: FA20RF smoke detector transmit from Domoticz 
 ===

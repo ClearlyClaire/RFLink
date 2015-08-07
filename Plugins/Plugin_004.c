@@ -95,19 +95,19 @@ boolean Plugin_004(byte function, char *string) {
       //==================================================================================
       // Output
       // ----------------------------------
-      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++);           // Node and packet number 
+      sprintf(pbuffer, "20;%02X;", PKSequenceNumber++);    // Node and packet number 
       Serial.print( pbuffer );
       // ----------------------------------
-      Serial.print(F("NewKaku;"));                               // Label
+      Serial.print(F("NewKaku;"));                         // Label
       sprintf(pbuffer, "ID=%08lx;",((bitstream) >> 6) );   // ID   
       Serial.print( pbuffer );
-      sprintf(pbuffer, "SWITCH=%d;", ((bitstream)&0x0f)+1 );     
+      sprintf(pbuffer, "SWITCH=%x;", ((bitstream)&0x0f)+1 );
       Serial.print( pbuffer );
       Serial.print(F("CMD="));                    
 
       int command = (bitstream >> 4) & 0x03;
       if (command > 1) command ++;
-      if (i>140) {                                               // Commando en Dim deel
+      if (i>140) {                                         // Command and Dim part
           sprintf(pbuffer, "SET_LEVEL=%d;", dim );     
           Serial.print( pbuffer );
       } else {
@@ -118,7 +118,7 @@ boolean Plugin_004(byte function, char *string) {
       }
       Serial.println();
       // ----------------------------------
-      RawSignal.Repeats=true;                    // suppress repeats of the same RF packet         
+      RawSignal.Repeats=true;                              // suppress repeats of the same RF packet         
       RawSignal.Number=0;
       return true;
 }
@@ -128,7 +128,12 @@ boolean Plugin_004(byte function, char *string) {
 boolean PluginTX_004(byte function, char *string) {
         boolean success=false;
         //10;NewKaku;123456;3;ON;                   // ON, OFF, ALLON, ALLOFF, ALL 99, 99      
+        
+        //10;NewKaku;050515;f;OFF;
+        //10;NewKaku;2100fed;1;ON;
+        //10;NewKaku;000001;10;ON;
         //10;NewKaku;306070b;f;ON;
+        //10;NewKaku;306070b;10;ON;
         //01234567890123456789012
         if (strncasecmp(InputBuffer_Serial+3,"NEWKAKU;",8) == 0) { 
            byte x=18;                               // pointer to the switch number
@@ -137,35 +142,44 @@ boolean PluginTX_004(byte function, char *string) {
                  return false;
               } else {
                  x=19;
-                 if (InputBuffer_Serial[20] != ';') return false;
               }
-           } else {
-              if (InputBuffer_Serial[19] != ';') return false;
-              
            }
-           
+          
            unsigned long bitstream=0L;
            unsigned long tempaddress=0L;
            byte cmd=0;
            byte c=0;
            byte Address=0;                          // Address 1..16
             
-           InputBuffer_Serial[ 9]=0x30;
-           InputBuffer_Serial[10]=0x78;             // Get address from hexadecimal value 
-           if (x==19) {
-              InputBuffer_Serial[18]=0x00;          // Get address from hexadecimal value 
+           // -----
+           InputBuffer_Serial[ 9]=0x30;             // Get NEWKAKU/AC main address part from hexadecimal value 
+           InputBuffer_Serial[10]=0x78;             
+           InputBuffer_Serial[x-1]=0x00;            
+           tempaddress=str2int(InputBuffer_Serial+9);
+           // -----
+           //while((c=InputBuffer_Serial[x++])!=';'){ // Address: 1 to 16
+           //   if(c>='0' && c<='9'){Address=Address*10;Address=Address+c-'0';}
+           //}
+           InputBuffer_Serial[x-2]=0x30;            // Get unit number from hexadecimal value 
+           InputBuffer_Serial[x-1]=0x78;            // x points to the first character of the unit number 
+           if (InputBuffer_Serial[x+1] == ';') {
+              InputBuffer_Serial[x+1]=0x00;
+              cmd=2;
            } else {
-              InputBuffer_Serial[17]=0x00;          // Get address from hexadecimal value 
+              if (InputBuffer_Serial[x+2] == ';') {
+                 InputBuffer_Serial[x+2]=0x00;            
+                 cmd=3;
+              } else {
+                 return false;
+              }
            }
-           tempaddress=str2int(InputBuffer_Serial+9);  // NewKAKU address
-
-           while((c=InputBuffer_Serial[x++])!=';'){ // Address: 1 to 16
-              if(c>='0' && c<='9'){Address=Address*10;Address=Address+c-'0';}
-           }
+           Address=str2int(InputBuffer_Serial+(x-2));  // NewKAKU unit number
            if (Address > 16) return false;          // invalid address
-           Address--;                               // 1 to 16 -> 0 to 15
-           tempaddress=(tempaddress <<6) + Address;
-
+           Address--;                               // 1 to 16 -> 0 to 15 (transmitted value is 1 less than shown values)
+           x=x+cmd;                                 // point to on/off/dim command part
+           // -----
+           tempaddress=(tempaddress <<6) + Address; // Complete transmitted address
+           // -----
            cmd=str2cmd(InputBuffer_Serial+x);       // Get ON/OFF etc. command
            if (cmd == false) {                      // Not a valid command received? ON/OFF/ALLON/ALLOFF
               cmd=str2int(InputBuffer_Serial+x);    // get DIM value
@@ -173,13 +187,13 @@ boolean PluginTX_004(byte function, char *string) {
            // --------------- NEWKAKU SEND ------------
            //unsigned long bitstream=0L;
            byte i=1;
-           x=0;                                                         // aantal posities voor pulsen/spaces in RawSignal
+           x=0;                                     // aantal posities voor pulsen/spaces in RawSignal
         
            // bouw het KAKU adres op. Er zijn twee mogelijkheden: Een adres door de gebruiker opgegeven binnen het bereik van 0..255 of een lange hex-waarde
-           if (tempaddress<=255)
-              bitstream=1|(tempaddress<<6);                             // Door gebruiker gekozen adres uit de Nodo_code toevoegen aan adres deel van de KAKU code. 
-           else
-              bitstream=tempaddress & 0xFFFFFFCF;                       // adres geheel over nemen behalve de twee bits 5 en 6 die het schakel commando bevatten.
+           //if (tempaddress<=255)
+           //   bitstream=1|(tempaddress<<6);                             // Door gebruiker gekozen adres uit de Nodo_code toevoegen aan adres deel van de KAKU code. 
+           //else
+           bitstream=tempaddress & 0xFFFFFFCF;                          // adres geheel over nemen behalve de twee bits 5 en 6 die het schakel commando bevatten.
     
            RawSignal.Repeats=7;                                         // Aantal herhalingen van het signaal.
            RawSignal.Delay=20;                                          // Tussen iedere pulsenreeks enige tijd rust.
