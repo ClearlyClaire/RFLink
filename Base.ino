@@ -1,7 +1,7 @@
 #define BUILDNR                          000                                    // shown in version
 #define MIN_RAW_PULSES                    20                                    // =8 bits. Minimal number of bits*2 that need to have been received before we spend CPU time on decoding the signal.
 #define RAWSIGNAL_SAMPLE_RATE             30                                    // Sample width / resolution in uSec for raw RF pulses.
-#define MIN_PULSE_LENGTH                  40                                    // Pulses shorter than this value in uSec. will be seen as garbage and not taken as actual pulses.
+#define MIN_PULSE_LENGTH                  60                                    // Pulses shorter than this value in uSec. will be seen as garbage and not taken as actual pulses.
 #define SIGNAL_TIMEOUT                     7                                    // Timeout, after this time in mSec. the RF signal will be considered to have stopped.
 #define SIGNAL_REPEAT_TIME               500                                    // Time in mSec. in which the same RF signal should not be accepted again. Filters out retransmits.
 #define BAUD                           57600                                    // Baudrate for serial communication.
@@ -71,7 +71,9 @@ struct RawSignalStruct                                                          
   unsigned long Time;                                                           // Timestamp indicating when the signal was received (millis())
   byte Pulses[RAW_BUFFER_SIZE+2];                                               // Table with the measured pulses in microseconds divided by RawSignal.Multiply. (halves RAM usage)
                                                                                 // First pulse is located in element 1. Element 0 is used for special purposes, like signalling the use of a specific plugin
-} RawSignal={0,0,0,0,0,0L};
+} RawSignalA={0,0,0,0,0,0L}, RawSignalB={0,0,0,0,0,0L}, RawSignal;
+RawSignalStruct * volatile RawSignalPtr;
+
 // ===============================================================================
 unsigned long RepeatingTimer=0L;
 unsigned long SignalCRC=0L;                                                     // holds the bitstream value for some plugins to identify RF repeats
@@ -81,6 +83,7 @@ unsigned long SignalHashPrevious=0L;                                            
 void setup() {
   Serial.begin(BAUD);                                                           // Initialise the serial port
   pinMode(PIN_RF_RX_DATA, INPUT);                                               // Initialise in/output ports
+  attachInterrupt(1, RXInterruptHandler, CHANGE);
   pinMode(PIN_RF_TX_DATA, OUTPUT);                                              // Initialise in/output ports
   pinMode(PIN_RF_TX_VCC,  OUTPUT);                                              // Initialise in/output ports
   pinMode(PIN_RF_RX_VCC,  OUTPUT);                                              // Initialise in/output ports    
@@ -99,20 +102,13 @@ void setup() {
 }
 
 void loop() {
-  byte SerialInByte=0;                                                          // incoming character value
-  int SerialInByteCounter=0;                                                    // number of bytes counter 
+  static byte SerialInByte=0;                                                          // incoming character value
+  static int SerialInByteCounter=0;                                                    // number of bytes counter 
 
-  byte ValidCommand=0;
-  unsigned long FocusTimer=0L;                                                  // Timer to keep focus on the task during communication
-  InputBuffer_Serial[0]=0;                                                      // erase serial buffer string 
+  static byte ValidCommand=0;
 
-  while(true) {
     ScanEvent();                                                                // Scan for RF events
     // SERIAL: *************** kijk of er data klaar staat op de seriele poort **********************
-    if(Serial.available()) {
-      FocusTimer=millis()+FOCUS_TIME;
-
-      while(FocusTimer>millis()) {                                              // standby 
         if(Serial.available()) {
           SerialInByte=Serial.read();                
           
@@ -204,12 +200,8 @@ void loop() {
             SerialInByteCounter=0;  
             InputBuffer_Serial[0]=0;                                            // serial data has been processed. 
             ValidCommand=0;
-            FocusTimer=millis()+FOCUS_TIME;                                             
           }// if(SerialInByte
        }// if(Serial.available())
-    }// while 
-   }// if(Serial.available())
-  }// while 
 } // void
 /*********************************************************************************************/
 
