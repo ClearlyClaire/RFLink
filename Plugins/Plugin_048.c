@@ -445,7 +445,7 @@ boolean Plugin_048(byte function, char *string) {
       word p = pulse;
       // ==================================================================================
       for (int x = 0; x < RawSignal.Number; x++) {
-          p = RawSignal.Pulses[x]*RawSignal.Multiply;
+          p = RawSignal.Pulses[x+1]*RawSignal.Multiply;
           if (p != 0) {
              if (orscV1.nextPulse(p)) {
                 reportSerial(orscV1);
@@ -545,12 +545,12 @@ boolean Plugin_048(byte function, char *string) {
         Serial.print("20;");
         PrintHexByte(PKSequenceNumber++);
         Serial.print(F(";Oregon Temp;ID="));           // Label
-        PrintHexByte(rc);
+        PrintHexByte(osdata[3]);
         PrintHexByte(osdata[2]);
         // ----------------------------------
         sprintf(pbuffer, ";TEMP=%04x;", temp);     
         Serial.print( pbuffer );
-        if ((osdata[3] & 0x0F) >= 4) {
+        if (osdata[4] & 0x0C) {
            Serial.print(F("BAT=LOW;")); 
         } else {        
            Serial.print(F("BAT=OK;")); 
