@@ -62,7 +62,7 @@ boolean Plugin_046(byte function, char *string) {
       for(int x=2;x < AURIOLV2_PULSECOUNT;x+=2) {
          if (RawSignal.Pulses[x+1]*RawSignal.Multiply > 700) return false;
          if (RawSignal.Pulses[x]*RawSignal.Multiply > 1400) {
-            if (RawSignal.Pulses[x]*RawSignal.Multiply > 2000) return false;
+            if (RawSignal.Pulses[x]*RawSignal.Multiply > 2100) return false;
             if (bitcounter < 24) {
                bitstream1 = (bitstream1 << 1) | 0x1;
                bitcounter++;                        // only need to count the first 10 bits
@@ -70,7 +70,7 @@ boolean Plugin_046(byte function, char *string) {
                bitstream2 = (bitstream2 << 1) | 0x1;
             }
          } else {
-            if (RawSignal.Pulses[x]*RawSignal.Multiply > 900) return false;
+            if (RawSignal.Pulses[x]*RawSignal.Multiply > 1100) return false;
             if (RawSignal.Pulses[x]*RawSignal.Multiply < 500) return false;
             if (bitcounter < 24) {
                bitstream1 = (bitstream1 << 1); 
