@@ -34,6 +34,7 @@ uint8_t Fport=0;
 uint8_t FstateMask=0;
 /*********************************************************************************************/
 boolean FetchSignal(byte DataPin, boolean StateSignal) {
+   unsigned long LastPulse;
    uint8_t Fbit = digitalPinToBitMask(DataPin);
    uint8_t Fport = digitalPinToPort(DataPin);
    uint8_t FstateMask = (StateSignal ? Fbit : 0);
@@ -57,9 +58,10 @@ boolean FetchSignal(byte DataPin, boolean StateSignal) {
      maxloops = (SIGNAL_TIMEOUT * LoopsPerMilli);  
      do{                                                                         // read the pulses in microseconds and place them in temporary buffer RawSignal
        numloops = 0;
+       LastPulse = micros();
        while (((*portInputRegister(Fport) & Fbit) == FstateMask) ^ Ftoggle)      // while() loop *A*
-       if (numloops++ == maxloops) break;                                        // timeout 
-       PulseLength=((numloops + Overhead)* 1000) / LoopsPerMilli;                // Contains pulslength in microseconds
+           if (numloops++ == maxloops) break;                                    // timeout 
+       PulseLength = micros() - LastPulse;                                       // Contains pulslength in microseconds
        if (PulseLength<MIN_PULSE_LENGTH) break;                                  // Pulse length too short
        Ftoggle=!Ftoggle;    
        RawSignal.Pulses[RawCodeLength++]=PulseLength/(unsigned long)(RAWSIGNAL_SAMPLE_RATE); // store in RawSignal !!!! 
