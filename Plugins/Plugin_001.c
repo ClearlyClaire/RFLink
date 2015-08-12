@@ -256,45 +256,21 @@ boolean Plugin_001(byte function, char *string) {
       // ==========================================================================
       // Beginning of Signal translation for Auriol & Xiron
       // ==========================================================================
-      if (RawSignal.Number == 511) {
-         int pos1=74;
-         int pos2=74+74;
-         int pos3=74+74+74;
-         int offset=0;
-         //if (RawSignal.Pulses[pos1]*RawSignal.Multiply > 3300) {
-         if (RawSignal.Pulses[pos1] > PULSE3300) {
-            //if (RawSignal.Pulses[pos2]*RawSignal.Multiply > 3300 && RawSignal.Pulses[pos3]*RawSignal.Multiply > 3300) {
-            if (RawSignal.Pulses[pos2] > PULSE3300 && RawSignal.Pulses[pos3] > PULSE3300) {
-               RawSignal.Number=74;                 // New packet length
-               RawSignal.Pulses[0]=46;              // signal the plugin number that should process this packet
-               return false;                        // Conversion done, stop plugin 1 and continue with regular plugins
-            }
-         }
-         offset=2;
-         //if (RawSignal.Pulses[offset]*RawSignal.Multiply > 3300) {
-         if (RawSignal.Pulses[offset] > PULSE3300) {
-            //if (RawSignal.Pulses[pos1+offset]*RawSignal.Multiply > 3300 && RawSignal.Pulses[pos2+offset]*RawSignal.Multiply > 3300) {
-            if (RawSignal.Pulses[pos1+offset] > PULSE3300 && RawSignal.Pulses[pos2+offset] > PULSE3300) {
+      if (RawSignal.Number == RAW_BUFFER_SIZE-1) {
+         for (int offset=0; offset < 74; offset++)
+         {
+           //if (RawSignal.Pulses[offset]*RawSignal.Multiply > 3300) {
+           if (RawSignal.Pulses[offset+74] > PULSE3300
+               && RawSignal.Pulses[offset+74*2] > PULSE3300
+               && ((offset > 0 && RawSignal.Pulses[offset] > PULSE3300)
+                || RawSignal.Pulses[offset+74*3] > PULSE3300)) {
                for (i=0;i<74;i++){
                    RawSignal.Pulses[1+i]=RawSignal.Pulses[offset+i+1]; // reorder pulse array
                }
                RawSignal.Number=74;                 // New packet length
                RawSignal.Pulses[0]=46;              // signal the plugin number that should process this packet
                return false;                        // Conversion done, stop plugin 1 and continue with regular plugins
-            }
-         }
-         offset=4;
-         //if (RawSignal.Pulses[offset]*RawSignal.Multiply > 3300) {
-         if (RawSignal.Pulses[offset] > PULSE3300) {
-            //if (RawSignal.Pulses[pos1+offset]*RawSignal.Multiply > 3300 && RawSignal.Pulses[pos2+offset]*RawSignal.Multiply > 3300) {
-            if (RawSignal.Pulses[pos1+offset] > PULSE3300 && RawSignal.Pulses[pos2+offset] > PULSE3300) {
-               for (i=0;i<74;i++){
-                   RawSignal.Pulses[1+i]=RawSignal.Pulses[offset+i+1]; // reorder pulse array
-               }
-               RawSignal.Number=74;                 // New packet length
-               RawSignal.Pulses[0]=46;              // signal the plugin number that should process this packet
-               return false;                        // Conversion done, stop plugin 1 and continue with regular plugins
-            }
+           }
          }
       }
       // ==========================================================================
@@ -303,13 +279,11 @@ boolean Plugin_001(byte function, char *string) {
       // ==========================================================================
       // Beginning of Signal translation for SelectPlus
       // ==========================================================================
-      if (RawSignal.Number == 511) {
-         int pos1=0;
-         int pos2=0;
+      if (RawSignal.Number == RAW_BUFFER_SIZE-1) {
          for (j=2;j<36 /*RawSignal.Number*/;j++) {  // Only check twice the total RF packet length we are looking for
              //if (RawSignal.Pulses[j]*RawSignal.Multiply > 2500) {  // input is going to fast skip to where new part is going to start
              if (RawSignal.Pulses[j] > PULSE5000) {  // input is going to fast skip to where new part is going to start
-                if (j+36 > 511) return false; 
+                if (j+36 >= RAW_BUFFER_SIZE) return false; 
                 //if ( (RawSignal.Pulses[j+26]*RawSignal.Multiply > 2500) && (RawSignal.Pulses[j+26]*RawSignal.Multiply < 3000) && (RawSignal.Pulses[j+26+26]*RawSignal.Multiply > 2500) ) { // first long delay found, make sure we have another at the right position               
                 if ( (RawSignal.Pulses[j+36] > PULSE5000) && (RawSignal.Pulses[j+36+36] > PULSE5000) ) { // first long delay found, make sure we have another at the right position               
                     for (i=0;i<36;i++){
@@ -328,12 +302,12 @@ boolean Plugin_001(byte function, char *string) {
       // ==========================================================================
       // Beginning of Signal translation for Byron Doorbell
       // ==========================================================================
-      if (RawSignal.Number == 511) {
+      if (RawSignal.Number == RAW_BUFFER_SIZE - 1) {
          for (j=2;j<90 /*RawSignal.Number*/;j++) {  // Only check twice the total RF packet length we are looking for
              // Byron SX
              //if (RawSignal.Pulses[j]*RawSignal.Multiply > 2500) {  // input is going to fast skip to where new part is going to start
              if (RawSignal.Pulses[j] > PULSE2500) {  // input is going to fast skip to where new part is going to start
-                if (j+26 > 511) return false; 
+                if (j+26 >= RAW_BUFFER_SIZE) return false; 
                 //if ( (RawSignal.Pulses[j+26]*RawSignal.Multiply > 2500) && (RawSignal.Pulses[j+26]*RawSignal.Multiply < 3000) && (RawSignal.Pulses[j+26+26]*RawSignal.Multiply > 2500) ) { // first long delay found, make sure we have another at the right position               
                 if ( (RawSignal.Pulses[j+26] > PULSE2500) && (RawSignal.Pulses[j+26] < PULSE3000) && (RawSignal.Pulses[j+26+26] > PULSE2500) ) { // first long delay found, make sure we have another at the right position               
                     for (i=0;i<26;i++){
