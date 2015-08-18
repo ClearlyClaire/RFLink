@@ -157,13 +157,13 @@ boolean Plugin_003(byte function, char *string) {
       PTLow=PTLow*RawSignal.Multiply;               // get actual value
       PTHigh=PTHigh*RawSignal.Multiply;             // get actual value
 
-      if( (PTLow == 225 ||  PTLow == 250) && (PTHigh == 900 ||  PTHigh == 925  ||  (PTHigh >= 1000  && PTHigh <= 1050)) ) signaltype=1; // ELRO 
+      if( (PTLow >= 210 && PTLow <= 270) && ((PTHigh >= 900 &&  PTHigh <= 930) || (PTHigh >= 990  && PTHigh <= 1050)) ) signaltype=1; // ELRO 
       else
-      if( (PTLow == 250 ||  PTLow == 275)    && ((PTHigh >=1000) && (PTHigh <=1050)) ) signaltype=2; // Profile PR44N
+      if( (PTLow >= 240 && PTLow <= 300) && ((PTHigh >= 990) && (PTHigh <= 1050)) ) signaltype=2; // Profile PR44N
       else
-      if( (PTLow == 325 ||  PTLow == 325)    && ((PTHigh >= 800) && (PTHigh <= 850)) ) signaltype=3; // Profile PR47N
+      if( (PTLow >= 300 && PTLow <= 330) && ((PTHigh >= 780) && (PTHigh <= 870)) ) signaltype=3; // Profile PR47N
       else
-      if( ((PTLow >= 125) && (PTLow <= 300)) && ((PTHigh >= 775) && (PTHigh <= 925)) ) signaltype=4; // Sartano
+      if( ((PTLow >= 120) && (PTLow <= 300)) && ((PTHigh >= 750) && (PTHigh <= 930)) ) signaltype=4; // Sartano
       //else
       //if( (PTLow >= 50 ||  PTLow <= 75) && (PTHigh >= 525 ||  PTHigh <= 575) ) signaltype=4; // Energenie5
       //else
