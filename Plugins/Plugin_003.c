@@ -92,14 +92,14 @@
 #define KAKU_CodeLength             12              // number of data bits
 #define KAKU_T                     370              // 370? 350 us
 #define KAKU_R                     300              // 370? 350 us
-#define Sartano_T                  300              // 300 uS
+#define Sartano_T                  360              // 360 uS
 
 #ifdef PLUGIN_003
 boolean Plugin_003(byte function, char *string) {
       if (RawSignal.Number!=(KAKU_CodeLength*4)+2) return false; // conventionele KAKU bestaat altijd uit 12 data bits plus stop. Ongelijk, dan geen KAKU!
       int i,j;
       boolean error=false; 
-      unsigned long bitstream=0L;
+      word bitstream=0;
       byte command=0;
       byte housecode=0;
       byte unitcode=0;
@@ -186,8 +186,8 @@ boolean Plugin_003(byte function, char *string) {
       //==================================================================================
       if (signaltype == 4) {                        // Sartano 
          // ----------------------------------      // Sartano 
-         housecode = ((bitstream) & 0x0000001FL);       // .......11111b
-         unitcode = (((bitstream) & 0x000003E0L) >> 5); // ..1111100000b
+         housecode = ((bitstream) & 0x01F);         // .......11111b
+         unitcode = (((bitstream) & 0x3E0) >> 5);   // ..1111100000b
          housecode = ~housecode;                    // Sartano housecode is 5 bit ('A' - '`')
          housecode &= 0x0000001FL;                  // Translate housecode so that all jumpers off = 'A' and all jumpers on = '`'
          housecode += 0x41;
@@ -213,13 +213,14 @@ boolean Plugin_003(byte function, char *string) {
                      signaltype=3;
                      break;
                      
-         }	  
-         if (signaltype == 4) {                        // Sartano 
-            if ( ((bitstream >> 10) & 0x03) == 2) {
-                command = 1; // On
-            } else if ( ((bitstream >> 10) & 0x03) == 1){
-                command = 0;// Off
-            }		  
+         }
+         if (signaltype == 4)
+         {
+             if ( ((bitstream >> 10) & 0x03) == 2) {
+                 command = 1; // On
+             } else if ( ((bitstream >> 10) & 0x03) == 1){
+                 command = 0;// Off
+             }
          }
       }      
       if (signaltype != 4) {                        // KAKU (and some compatibles for now)
@@ -267,12 +268,12 @@ boolean Plugin_003(byte function, char *string) {
 #endif //PLUGIN_003
 
 #ifdef PLUGIN_TX_003
-void Kaku_Send(unsigned long address, byte command);
-void Sartano_Send(unsigned long address);
+void Kaku_Send(word address, byte command);
+void Sartano_Send(word address);
 
 boolean PluginTX_003(byte function, char *string) {
         boolean success=false;
-        unsigned long bitstream=0L;
+        word bitstream=0;
         byte command=0;
         uint32_t housecode = 0;
         uint32_t unitcode = 0;
@@ -341,18 +342,18 @@ boolean PluginTX_003(byte function, char *string) {
            }
            command = str2cmd(InputBuffer_Serial+x)==VALUE_ON; // ON/OFF command
            housecode = ~Home;
-           housecode &= 0x0000001FL;
+           housecode &= 0x001F;
            unitcode=Address;
            if ((unitcode  >= 1) && (unitcode <= 5) ) {
-              bitstream = housecode & 0x0000001FL;
-              if (unitcode == 1) bitstream |= 0x000003C0L;
-              else if (unitcode == 2) bitstream |= 0x000003A0L;
-              else if (unitcode == 3) bitstream |= 0x00000360L;
-              else if (unitcode == 4) bitstream |= 0x000002E0L;
-              else if (unitcode == 5) bitstream |= 0x000001E0L;
+              bitstream = housecode & 0x01F;
+              if (unitcode == 1) bitstream |= 0x3C0;
+              else if (unitcode == 2) bitstream |= 0x3A0;
+              else if (unitcode == 3) bitstream |= 0x360;
+              else if (unitcode == 4) bitstream |= 0x2E0;
+              else if (unitcode == 5) bitstream |= 0x1E0;
 
-              if (command) bitstream |= 0x00000800L;
-              else bitstream |= 0x00000400L;					
+              if (command) bitstream |= 0x800;
+              else bitstream |= 0x400;
            }
            Sartano_Send(bitstream);
            success=true;
@@ -361,8 +362,8 @@ boolean PluginTX_003(byte function, char *string) {
         return success;
 }
 
-void Kaku_Send(unsigned long bitstream, byte command) { 
-     RawSignal.Multiply=50;
+void Kaku_Send(word bitstream, byte command) { 
+     RawSignal.Multiply=KAKU_T/10;
      RawSignal.Repeats=7;                             // KAKU heeft minimaal vijf herhalingen nodig om te schakelen.
      RawSignal.Delay=20;                              // Tussen iedere pulsenreeks enige tijd rust.
      RawSignal.Number=KAKU_CodeLength*4+2;            // Lengte plus een stopbit
@@ -371,79 +372,53 @@ void Kaku_Send(unsigned long bitstream, byte command) {
      bitstream = bitstream | (0x600 | ((command & 1 /*Commando*/) << 11)); // Stel een bitstream samen
      // loop de 12-bits langs en vertaal naar pulse/space signalen.  
      for (byte i=0; i<KAKU_CodeLength; i++) {
-         RawSignal.Pulses[4*i+1]=KAKU_T/RawSignal.Multiply;
-         RawSignal.Pulses[4*i+2]=(KAKU_T*3)/RawSignal.Multiply;
+         RawSignal.Pulses[4*i+1]=10;
+         RawSignal.Pulses[4*i+2]=30;
     
          if (((command >> 1)&1) /* Group */ && i>=4 && i<8) {
-            RawSignal.Pulses[4*i+3]=KAKU_T/RawSignal.Multiply;
-            RawSignal.Pulses[4*i+4]=KAKU_T/RawSignal.Multiply;
+            RawSignal.Pulses[4*i+3]=10;
+            RawSignal.Pulses[4*i+4]=10;
          } else { // short 0
             if ((bitstream>>i)&1) { // 1
-                     RawSignal.Pulses[4*i+3]=(KAKU_T*3)/RawSignal.Multiply;
-                     RawSignal.Pulses[4*i+4]=KAKU_T/RawSignal.Multiply;
+                     RawSignal.Pulses[4*i+3]=30;
+                     RawSignal.Pulses[4*i+4]=10;
             } else { //0
-                     RawSignal.Pulses[4*i+3]=KAKU_T/RawSignal.Multiply;
-                     RawSignal.Pulses[4*i+4]=(KAKU_T*3)/RawSignal.Multiply;          
-            }          
+                     RawSignal.Pulses[4*i+3]=10;
+                     RawSignal.Pulses[4*i+4]=30;
+            }
         }
-        // Stopbit
-        RawSignal.Pulses[4*KAKU_CodeLength+1]=KAKU_T/RawSignal.Multiply;
-        RawSignal.Pulses[4*KAKU_CodeLength+2]=KAKU_T/RawSignal.Multiply;
     }
+    // Stopbit
+    RawSignal.Pulses[4*KAKU_CodeLength+1]=KAKU_T/RawSignal.Multiply;
+    RawSignal.Pulses[4*KAKU_CodeLength+2]=KAKU_T/RawSignal.Multiply;
+
     RawSendRF();
     RawSignal.Multiply=RAWSIGNAL_SAMPLE_RATE; 
 }
 
-void Sartano_Send(unsigned long address) { 
-    int fpulse = 360;                               // Pulse witdh in microseconds
-    int fretrans = 7;                               // Number of code retransmissions
-    uint32_t fdatabit;
-    uint32_t fdatamask = 0x00000001;
-    uint32_t fsendbuff;
-	
-    digitalWrite(PIN_RF_RX_VCC,LOW);                // Turn off power to the RF receiver 
-    digitalWrite(PIN_RF_TX_VCC,HIGH);               // Enable the 433Mhz transmitter
-    delayMicroseconds(TRANSMITTER_STABLE_DELAY);    // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
+void Sartano_Send(word bitstream) {
+    RawSignal.Multiply = Sartano_T / 10;
+    RawSignal.Repeats=7;
+    RawSignal.Delay=11;
+    RawSignal.Number=KAKU_CodeLength*4+2;
 
-    for (int nRepeat = 0; nRepeat <= fretrans; nRepeat++) {
-        fsendbuff = address;
-        // Send command
-        
-		for (int i = 0; i < 12; i++) {              // Sartano packet is 12 bits 
-            // read data bit
-            fdatabit = fsendbuff & fdatamask;       // Get most right bit
-            fsendbuff = (fsendbuff >> 1);           // Shift right
+    // loop de 12-bits langs en vertaal naar pulse/space signalen.  
+    for (byte i=0; i<KAKU_CodeLength; i++) {
+        RawSignal.Pulses[4*i+1]=10;
+        RawSignal.Pulses[4*i+2]=30;
 
-			// PT2262 data can be 0, 1 or float. Only 0 and float is used by Sartano
-            if (fdatabit != fdatamask) {            // Write 0
-                digitalWrite(PIN_RF_TX_DATA, HIGH);
-                delayMicroseconds(fpulse);
-                digitalWrite(PIN_RF_TX_DATA, LOW);
-                delayMicroseconds(fpulse * 3);
-				digitalWrite(PIN_RF_TX_DATA, HIGH);
-                delayMicroseconds(fpulse);
-                digitalWrite(PIN_RF_TX_DATA, LOW);
-                delayMicroseconds(fpulse * 3);
-            } else {                                // Write float
-                digitalWrite(PIN_RF_TX_DATA, HIGH);
-                delayMicroseconds(fpulse * 1);
-                digitalWrite(PIN_RF_TX_DATA, LOW);
-                delayMicroseconds(fpulse * 3);
-				digitalWrite(PIN_RF_TX_DATA, HIGH);
-                delayMicroseconds(fpulse * 3);
-                digitalWrite(PIN_RF_TX_DATA, LOW);
-                delayMicroseconds(fpulse * 1);
-            }
+        if ((bitstream >> i) & 1) { // 0
+           RawSignal.Pulses[4*i+3]=30;
+           RawSignal.Pulses[4*i+4]=10;
+        } else { //1
+           RawSignal.Pulses[4*i+3]=10;
+           RawSignal.Pulses[4*i+4]=30;
         }
-		// Send sync bit
-        digitalWrite(PIN_RF_TX_DATA, HIGH);         
-        delayMicroseconds(fpulse * 1);
-        digitalWrite(PIN_RF_TX_DATA, LOW);          // and lower the signal
-        delayMicroseconds(fpulse * 31);
     }
-    delayMicroseconds(TRANSMITTER_STABLE_DELAY);    // short delay to let the transmitter become stable (Note: Aurel RTX MID needs 500µS/0,5ms)
-    digitalWrite(PIN_RF_TX_VCC,LOW);                // Turn thew 433Mhz transmitter off
-    digitalWrite(PIN_RF_RX_VCC,HIGH);               // Turn the 433Mhz receiver on
-    RFLinkHW();
+    // Stopbit
+    RawSignal.Pulses[4*KAKU_CodeLength+1]=10;
+
+    RawSendRF();
+    RawSignal.Multiply=RAWSIGNAL_SAMPLE_RATE;
 }
 #endif //PLUGIN_TX_003
